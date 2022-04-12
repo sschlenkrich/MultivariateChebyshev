@@ -1,4 +1,5 @@
 
+using BenchmarkTools
 using Distributions
 using Printf
 using Random
@@ -48,6 +49,22 @@ end
     @test batchmul(ones(4,3,1,1), ones(3,2,1,1)) == 3.0*ones(4,2,1,1)
     @test batchmul(ones(4,3,5), ones(3,2,5)) == 3.0*ones(4,2,5)
     @test batchmul(ones(4,3), ones(3,2)) == 3.0*ones(4,2)
+end
+
+@testset "test_matmul" begin
+    C_ref = 3.0*ones(5,5,4,2)
+    @test matmul(ones(5,5,4,3), ones(5,5,3,2)) == C_ref
+    @test matmul(ones(5,1,4,3), ones(5,5,3,2)) == C_ref
+    @test matmul(ones(1,5,4,3), ones(5,5,3,2)) == C_ref
+    @test matmul(ones(5,5,4,3), ones(5,1,3,2)) == C_ref
+    @test matmul(ones(5,5,4,3), ones(1,5,3,2)) == C_ref
+    @test matmul(ones(5,1,4,3), ones(1,5,3,2)) == C_ref
+    @test matmul(ones(1,5,4,3), ones(5,1,3,2)) == C_ref
+    @test matmul(ones(1,5,4,3), ones(1,5,3,2)) == 3.0*ones(1,5,4,2)
+    @test matmul(ones(5,1,4,3), ones(5,1,3,2)) == 3.0*ones(5,1,4,2)
+    @test matmul(ones(1,1,4,3), ones(1,1,3,2)) == 3.0*ones(1,1,4,2)
+    @test matmul(ones(5,4,3), ones(5,3,2)) == 3.0*ones(5,4,2)
+    @test matmul(ones(4,3), ones(3,2)) == 3.0*ones(4,2)
 end
 
 @testset "test_chebyshev_points" begin
@@ -171,4 +188,20 @@ end
     # println(max(abs.(z - z_ref)...))
     @test isapprox(z, z_ref, atol=1.0e-1)
     @test max(abs.(z - z_ref)...) < 7.0e-3
+end
+
+@testset "test_matrix_multiplication_performance" begin
+    D = 5  # number of dimensions
+    Nd = 5 # size per dimension
+    degrees = ( Nd for d in 1:D )
+    n_points = prod(degrees)
+    rng = MersenneTwister(42)
+    A = rand(rng, Float64, (degrees..., n_points))
+    B = permutedims(A, length(size(A)):-1:1)
+    b1 = @benchmark batchmul($A,$A)
+    b2 = @benchmark matmul($B,$B)
+    display(b1)
+    println()
+    display(b2)
+    println()
 end
