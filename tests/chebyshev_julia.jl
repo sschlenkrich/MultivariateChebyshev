@@ -120,6 +120,8 @@ end
     # println(size(y))
     # println(y)
     @test y==24.0*ones(5)
+    y = chebyshev_batch_call(C, x, matmul)
+    @test y==24.0*ones(5)
 end
 
 function BlackOverK(x)
@@ -155,6 +157,28 @@ end
     @test size(C)==(4,5,6)
 end
 
+@testset "test_chebyshev_coefficients_matmul" begin
+    degrees = [ 2, 3, 4 ]
+    multi_points = chebyshev_multi_points(degrees)
+    values = ones(size(multi_points, 1))
+    coeff = chebyshev_coefficients(degrees, multi_points, values, matmul)
+    coeff_ref = zeros(size(coeff))
+    coeff_ref[(1 for d in degrees)...] = 1.0
+    # println(coeff)
+    @test isapprox(coeff, coeff_ref, atol=5.0e-16)
+    #
+    a = [ 0.5, 0.01, -1.0 ]'
+    b = [ 2.0, 0.50, +1.0 ]'
+    degrees = [ 3, 4, 5 ]
+    #
+    multi_points = chebyshev_multi_points(degrees)
+    Y = chebyshev_transform(multi_points, a, b)
+    values = [ BlackOverK(Y[i,:]) for i in 1:size(Y,1) ]
+    C = chebyshev_coefficients(degrees, multi_points, values, matmul)
+    # println(size(C))
+    @test size(C)==(4,5,6)
+end
+
 @testset "test_black_formula_chebyshev_points" begin
     a = [ 0.5, 0.01, -1.0 ]'
     b = [ 2.0, 0.50, +1.0 ]'
@@ -166,6 +190,21 @@ end
     C = chebyshev_coefficients(degrees, multi_points, values)
     #
     z = chebyshev_interpolation(Y, C, a, b)
+    # println(max(abs.(z - values)...))
+    @test isapprox(z, values, atol=1.0e-14)
+end
+
+@testset "test_black_formula_chebyshev_points_matmul" begin
+    a = [ 0.5, 0.01, -1.0 ]'
+    b = [ 2.0, 0.50, +1.0 ]'
+    degrees = [ 3, 4, 5 ]
+    #
+    multi_points = chebyshev_multi_points(degrees)
+    Y = chebyshev_transform(multi_points, a, b)
+    values = [ BlackOverK(Y[i,:]) for i in 1:size(Y,1) ]
+    C = chebyshev_coefficients(degrees, multi_points, values, matmul)
+    #
+    z = chebyshev_interpolation(Y, C, a, b, matmul)
     # println(max(abs.(z - values)...))
     @test isapprox(z, values, atol=1.0e-14)
 end
@@ -190,6 +229,26 @@ end
     @test max(abs.(z - z_ref)...) < 7.0e-3
 end
 
+@testset "test_black_formula_random_points_matmul" begin
+    a = [ 0.5, 0.50, -1.0 ]'
+    b = [ 2.0, 2.50, +1.0 ]'
+    degrees = [ 5, 5, 5 ]
+    #
+    multi_points = chebyshev_multi_points(degrees)
+    Y = chebyshev_transform(multi_points, a, b)
+    values = [ BlackOverK(Y[i,:]) for i in 1:size(Y,1) ]
+    C = chebyshev_coefficients(degrees, multi_points, values, matmul)
+    #
+    rng = MersenneTwister(42)
+    base2 = 13
+    y = a .+ rand(rng, Float64, (2^base2, 3)) .* (b.-a)
+    z = chebyshev_interpolation(y, C, a, b, matmul)
+    z_ref = [ BlackOverK(y[i,:]) for i in 1:size(y,1) ]
+    # println(max(abs.(z - z_ref)...))
+    @test isapprox(z, z_ref, atol=1.0e-1)
+    @test max(abs.(z - z_ref)...) < 7.0e-3
+end
+
 @testset "test_matrix_multiplication_performance" begin
     D = 5  # number of dimensions
     Nd = 5 # size per dimension
@@ -200,6 +259,28 @@ end
     B = permutedims(A, length(size(A)):-1:1)
     b1 = @benchmark batchmul($A,$A)
     b2 = @benchmark matmul($B,$B)
+    display(b1)
+    println()
+    display(b2)
+    println()
+end
+
+@testset "test_black_formula_performance" begin
+    a = [ 0.5, 0.50, -1.0 ]'
+    b = [ 2.0, 2.50, +1.0 ]'
+    # degrees = [ 5, 5, 5 ]
+    degrees = [ 10, 10, 10 ]
+    #
+    multi_points = chebyshev_multi_points(degrees)
+    Y = chebyshev_transform(multi_points, a, b)
+    values = [ BlackOverK(Y[i,:]) for i in 1:size(Y,1) ]
+    #
+    C1 = chebyshev_coefficients(degrees, multi_points, values)
+    C2 = chebyshev_coefficients(degrees, multi_points, values, matmul)
+    # println(max(abs.(C1 - C2)...))
+    @test max(abs.(C1 - C2)...) < 2.0e-16
+    b1 = @benchmark chebyshev_coefficients($degrees, $multi_points, $values)
+    b2 = @benchmark chebyshev_coefficients($degrees, $multi_points, $values, $matmul)
     display(b1)
     println()
     display(b2)

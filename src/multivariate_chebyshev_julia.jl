@@ -236,7 +236,36 @@ function chebyshev_batch_call(C, x)
     return reshape(res, (size(res)[end],))
 end
 
-function chebyshev_coefficients(degrees, multi_points, values)
+function chebyshev_batch_call(C, x, matmul)
+    """
+    Calculate
+
+    z = [...[C * T(x_D)] * ...] * T(x_1)
+
+    for a tensor C and input points x.
+
+    For details see earlier definition of function chebyshev_batch_call.
+
+    This variant uses a Python-like matmul function.
+    """
+    degrees = [ d-1 for d in size(C) ]
+    @assert length(size(x))==2
+    @assert size(x, 2)==length(degrees)
+    res = reshape(C, (1, size(C)...))
+    for d in size(x, 2):-1:1
+        T = chebyshev_polynomials(x[:,d], degrees[d])
+        shape = append!([size(T,1)], [ 1 for k in 1:length(size(res))-3 ], [size(T,2)], [1])
+        T = reshape(T, Tuple(shape))
+        if length(size(res))==2  # last iteration
+            res = reshape(res, (size(res, 1), 1, size(res, 2)))
+        end
+        res = matmul(res, T)
+        res = reshape(res, size(res)[1:end-1])
+    end
+    return reshape(res, (size(res)[1],))
+end
+
+function chebyshev_coefficients(degrees, multi_points, values, matmul = nothing)
     """
     Calculate coefficients of Chebyshev basis functions.
 
@@ -266,13 +295,17 @@ function chebyshev_coefficients(degrees, multi_points, values)
     inner_node_factor = sum((1 .< multi_idx) .&& (multi_idx .< (degrees' .+ 1)), dims=2)
     values_adj = values .* 0.5.^(length(degrees) .- inner_node_factor)
     values_adj = reshape(values_adj, Tuple([n+1 for n in degrees])) # as tensor
-    multi_coeff = chebyshev_batch_call(values_adj, multi_points)
+    if matmul == nothing
+        multi_coeff = chebyshev_batch_call(values_adj, multi_points)
+    else
+        multi_coeff = chebyshev_batch_call(values_adj, multi_points, matmul)
+    end
     multi_coeff = multi_coeff .* (2 .^ inner_node_factor) ./ prod(degrees)
     coeff = reshape(multi_coeff, Tuple([n+1 for n in degrees])) # as tensor
     return coeff
 end
 
-function chebyshev_interpolation(y, coeff, a = -1.0, b = 1.0)
+function chebyshev_interpolation(y, coeff, a = -1.0, b = 1.0, matmul = nothing)
     """
     Calcuate multivariate Chebyshev interpolation.
 
@@ -296,5 +329,10 @@ function chebyshev_interpolation(y, coeff, a = -1.0, b = 1.0)
     1darray of shape (N,)
     """
     x = chebyshev_inverse_transform(y, a, b)
-    return chebyshev_batch_call(coeff, x)
+    if matmul == nothing
+        res = chebyshev_batch_call(coeff, x)
+    else
+        res = chebyshev_batch_call(coeff, x, matmul)
+    end
+    return res
 end
