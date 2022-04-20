@@ -127,3 +127,9 @@ def vector_to_params(x):
     strikePrice = np.exp(x[1] * heston_stdev(v0, theta, kappa, term)) * fwdPrice
     return (term, strikePrice, fwdPrice, v0, theta, kappa, rho, xi)
 
+
+def implied_volatility_from_vector(x, heston_model_pricer):
+    """
+    Wrap implied volatility calculation into a function.
+    """
+    return heston_model_pricer.implied_volatility(*vector_to_params(x))
