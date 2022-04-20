@@ -128,6 +128,11 @@ if __name__ == '__main__':
     }
     root_path = './'  # assume we start script from project root
     # we add some warm-up calculations at the beginning
-    res = run_performance_testing([1, 1, 1, 2], label_dict, pricer, root_path)
-    res.to_csv('./examples/heston_chebyshev_performance.csv', sep=';')
+    perf_degrees = [
+        1, 1, 1, 1, 1,
+        2, 2, 2, 2, 2,
+        3, 3, 3, 3, 3,
+    ]
+    res = run_performance_testing(perf_degrees, label_dict, pricer, root_path)
+    res.to_csv(root_path + 'examples/heston_chebyshev_performance.csv', sep=';')
     print(res)
