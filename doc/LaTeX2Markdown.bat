@@ -4,5 +4,5 @@ pandoc MultivariateChebyshev.tex -s ^
   --bibliography=.\refs\References.bib ^
   --mathjax ^
   --toc ^
-  -o MultivariateChebyshev.md
+  -o MultivariateChebyshev.ipynb
 pause
