@@ -3,6 +3,10 @@
 *.synctex.gz
 *.tex
 
+# LyX
+*.lyx#
+*.lyx~
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
