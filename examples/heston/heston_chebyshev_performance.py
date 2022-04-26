@@ -16,14 +16,19 @@ from src.multivariate_chebyshev_numpy import chebyshev_transform     as chebyshe
 from src.multivariate_chebyshev_numpy import chebyshev_coefficients  as chebyshev_coefficients_np
 from src.multivariate_chebyshev_numpy import chebyshev_interpolation as chebyshev_interpolation_np
 
-from tf_config import tensorflow as tf
+try:
+    from tf_config import tensorflow as tf
+    # control tf version via tf_config if necessary
+except ImportError:
+    pass
 from src.multivariate_chebyshev_tensorflow import chebyshev_multi_points  as chebyshev_multi_points_tf
 from src.multivariate_chebyshev_tensorflow import chebyshev_transform     as chebyshev_transform_tf
 from src.multivariate_chebyshev_tensorflow import chebyshev_coefficients  as chebyshev_coefficients_tf
 from src.multivariate_chebyshev_tensorflow import chebyshev_interpolation as chebyshev_interpolation_tf
 
+from julia.api import Julia
+jl_instance = Julia(compiled_modules=False)  # avoid Julia and PyJulia setup error.
 from julia import Main as jl
-
 
 def run_performance_testing(perf_degrees, label_dict, heston_model_pricer, root_path):
     """
