@@ -1,5 +1,3 @@
-from cProfile import label
-from cmath import exp
 import sys
 import unittest
 
@@ -10,9 +8,9 @@ import QuantLib as ql
 
 sys.path.append("./")
 
-from examples.heston_model_pricer import HestonModelPricer
-from examples.heston_model_pricer import params_to_vector
-from examples.heston_model_pricer import vector_to_params
+from examples.heston.heston_model_pricer import HestonModelPricer
+from examples.heston.heston_model_pricer import params_to_vector
+from examples.heston.heston_model_pricer import vector_to_params
 
 
 class TestHestonModel(unittest.TestCase):
@@ -129,7 +127,7 @@ class TestHestonModel(unittest.TestCase):
         z = np.array([ np.zeros(y.shape[0]), np.zeros(y.shape[0]), y[:,2] * np.exp(-y[:,1]*term) / np.exp(-y[:,0]*term) ]).T
         price_fwds = np.apply_along_axis(f, axis=1, arr=z)
         # print(np.max(np.abs(price_fwds - fwd_prices)))
-        self.assertLess(np.max(np.abs(price_fwds - fwd_prices)), 5.0e-16)
+        self.assertLess(np.max(np.abs(price_fwds - fwd_prices)), 7.0e-16)
 
     def test_implied_volatility(self):
         fwd_price = 1.0

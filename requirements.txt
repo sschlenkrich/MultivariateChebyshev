@@ -1,0 +1,7 @@
+julia
+matplotlib
+numpy
+pandas
+QuantLib
+scipy
+tensorflow

@@ -11,10 +11,7 @@ class HestonModelPricer:
     def __init__(self, complexFormula=None, integration=None):
         # QL term structures and quotes are required for process construction.
         # But these inputs are not used in low-level functions.
-        today = ql.Settings.instance().evaluationDate
-        self.__riskFreeTS = ql.YieldTermStructureHandle(ql.FlatForward(today, 0.0, ql.Actual365Fixed()))
-        self.__dividendTS = ql.YieldTermStructureHandle(ql.FlatForward(today, 0.0, ql.Actual365Fixed()))
-        self.__initialValue = ql.QuoteHandle(ql.SimpleQuote(0.0))
+        self.today = ql.Settings.instance().evaluationDate
         # Complex formula methodology and integration method are critical
         # for numerical accuracy.
         # For a discussion of different methods see
@@ -40,7 +37,9 @@ class HestonModelPricer:
                      v0,
                      rho,
                     ):
-        hestonProcess = ql.HestonProcess(self.__riskFreeTS, self.__dividendTS, self.__initialValue, v0, kappa, theta, xi, rho)
+        riskFreeTS = ql.YieldTermStructureHandle(ql.FlatForward(self.today, -np.log(riskFreeDiscount)/term, ql.Actual365Fixed()))
+        dividendTS = ql.YieldTermStructureHandle(ql.FlatForward(self.today, -np.log(dividendDiscount)/term, ql.Actual365Fixed()))
+        hestonProcess = ql.HestonProcess(riskFreeTS, dividendTS, ql.QuoteHandle(ql.SimpleQuote(spotPrice)), v0, kappa, theta, xi, rho)
         hestonModel = ql.HestonModel(hestonProcess)
         engine = ql.AnalyticHestonEngine(hestonModel, self.complexFormula, self.integration)
         if call_or_put == 1.0:
@@ -49,22 +48,30 @@ class HestonModelPricer:
             payoff = ql.PlainVanillaPayoff(ql.Option.Put, strikePrice)
         else:
             raise ValueError('call_or_put must be 1 or -1. Got ' + str(call_or_put) + '.')
-        value, evaluations = ql.AnalyticHestonEngine_doCalculation(
-            riskFreeDiscount,
-            dividendDiscount,
-            spotPrice,
-            strikePrice,
-            term,
-            kappa,
-            theta,
-            xi,
-            v0,
-            rho,
-            payoff,
-            self.integration,
-            self.complexFormula,
-            engine,
-            )
+        if hasattr(ql, 'AnalyticHestonEngine_doCalculation'):
+            value, evaluations = ql.AnalyticHestonEngine_doCalculation(
+                riskFreeDiscount,
+                dividendDiscount,
+                spotPrice,
+                strikePrice,
+                term,
+                kappa,
+                theta,
+                xi,
+                v0,
+                rho,
+                payoff,
+                self.integration,
+                self.complexFormula,
+                engine,
+                )
+        else:
+            # use standard QuantLib methodology
+            exerciseDate = self.today + round(365 * term)
+            exercise = ql.EuropeanExercise(exerciseDate)
+            option = ql.VanillaOption(payoff, exercise)
+            option.setPricingEngine(engine)
+            value = option.NPV()
         return value
 
     def implied_volatility(self,

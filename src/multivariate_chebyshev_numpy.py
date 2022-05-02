@@ -18,12 +18,10 @@ def cartesian_product(*arrays):
 
     See https://stackoverflow.com/questions/11144513/cartesian-product-of-x-and-y-array-points-into-single-array-of-2d-points
     """
-    la = len(arrays)
-    dtype = np.result_type(*arrays)
-    arr = np.empty([len(a) for a in arrays] + [la], dtype=dtype)
-    for i, a in enumerate(np.ix_(*arrays)):
-        arr[...,i] = a
-    return arr.reshape(-1, la)
+    mg = np.meshgrid(*arrays, indexing='ij')
+    st = np.stack(mg)
+    st = np.transpose(st, list(range(1,len(st.shape))) + [0])
+    return np.reshape(st, (-1, len(mg)))
 
 
 def chebyshev_transform(x, a = -1.0, b = 1.0):

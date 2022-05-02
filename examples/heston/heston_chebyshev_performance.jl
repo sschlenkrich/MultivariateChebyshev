@@ -15,7 +15,7 @@ Python via PyJulia calls.
 
 using DelimitedFiles
 
-include("../src/multivariate_chebyshev_julia.jl")
+include("../../src/multivariate_chebyshev_julia.jl")
 
 perf_degrees = [ 1, 1, 2, 3 ]
 for Nd in perf_degrees

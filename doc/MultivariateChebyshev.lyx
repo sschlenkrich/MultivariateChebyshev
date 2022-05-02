@@ -1,0 +1,3747 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage{bbm}
+\end_preamble
+\use_default_options true
+\begin_modules
+algorithm2e
+\end_modules
+\maintain_unincluded_children false
+\begin_local_layout
+Format 66
+PackageOptions algorithm2e "linesnumbered,lined,boxed,commentsnumbered"
+\end_local_layout
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 3cm
+\topmargin 3cm
+\rightmargin 3cm
+\bottommargin 3cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Multivariate Chebyshev Interpolation Using High-level Linear Algebra Operations
+\end_layout
+
+\begin_layout Author
+Sebastian Schlenkrich
+\end_layout
+
+\begin_layout Date
+Mai 2022
+\end_layout
+
+\begin_layout Abstract
+In this paper...
+\end_layout
+
+\begin_layout Section
+Multivariate Chebyshev Interpolation
+\end_layout
+
+\begin_layout Standard
+Multivariate Chebyshev interpolation is a classical interpolation method.
+ It is applied for various applications in mathematical finance as discussed
+ e.g.
+\begin_inset space ~
+\end_inset
+
+in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "GGMM16"
+literal "false"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Poe20"
+literal "false"
+
+\end_inset
+
+.
+ An important implementation of Chebyshev polynomials is the 
+\emph on
+chebfun
+\emph default
+ MATLAB project, see 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "DHT14"
+literal "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In its classical tensor-based form multivariate Chebyshev interpolation
+ suffers from the 
+\emph on
+curse of dimensionality
+\emph default
+.
+ This means that the computational effort grows exponentially with the number
+ of input dimensions of the target function.
+ There are various approaches to circumvent the exponential growth in computatio
+nal effort.
+ As an example, we mention tensor trains which are recently proposed for
+ function approximation in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "AP21"
+literal "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+With this work we do not aim at lifting the curse of dimensionality.
+ Instead, we want to show how general-purpose high-level linear algebra
+ operations can be used to implement multivariate Chebyshev interpolation
+ efficiently given its intrinsic constraints.
+ The high-level linear algebra operations itself are typically implemented
+ as efficiently as possible by delegating calculations to BLAS routines
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Bla02"
+literal "false"
+
+\end_inset
+
+ and by applying parallelisation.
+\end_layout
+
+\begin_layout Standard
+Chebyshev interpolation is specified on the 
+\begin_inset Formula $D$
+\end_inset
+
+-dimensional cube 
+\begin_inset Formula $\left[-1,1\right]^{D}$
+\end_inset
+
+.
+ We denote 
+\begin_inset Formula $p=\left(p_{1},\ldots,p_{D}\right)$
+\end_inset
+
+ the elements of that standardised domain 
+\begin_inset Formula $\left[-1,1\right]^{D}$
+\end_inset
+
+.
+ Original model inputs 
+\begin_inset Formula $x$
+\end_inset
+
+ are assumed to be defined on a general hyper-rectangular domain.
+ Such general domain is transformed into the standardised domain via an
+ element-wise affine transformation.
+\end_layout
+
+\begin_layout Standard
+We use the notation 
+\begin_inset Formula $p\left(x\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $x\left(p\right)$
+\end_inset
+
+ to describe the affine transformation from the general input domain to
+ the standardised domain and vice versa.
+\end_layout
+
+\begin_layout Standard
+For a scalar parameter 
+\begin_inset Formula $p_{d}\in\left[-1,1\right]$
+\end_inset
+
+ the Chebyshev polynomial of degree 
+\begin_inset Formula $j$
+\end_inset
+
+ is denoted 
+\begin_inset Formula $T_{j}\left(p_{d}\right)$
+\end_inset
+
+.
+ The Chebyshev polynomial is defined via 
+\begin_inset Formula 
+\begin{equation}
+T_{j}\left(p_{d}\right)=\cos\left(j\arccos\left(p_{d}\right)\right).\label{eq:Chebyshev-polynomial}
+\end{equation}
+
+\end_inset
+
+An equivalent representation is given via the recursion 
+\begin_inset Formula 
+\[
+\begin{aligned}T_{0}\left(p_{d}\right) & =1,\\
+T_{1}\left(p_{d}\right) & =p_{d},\\
+T_{j}\left(p_{d}\right) & =2p_{d}T_{j-1}\left(p_{d}\right)-T_{j-2}\left(p_{d}\right).
+\end{aligned}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Multivariate Chebyshev polynomials are defined as products of one-dimensional
+ Chebyshev polynomials.
+ Let 
+\begin_inset Formula $\bar{j}=\left(j_{1},\ldots,j_{D}\right)$
+\end_inset
+
+ be a multi-index and 
+\begin_inset Formula $p\in\left[-1,1\right]^{D}$
+\end_inset
+
+.
+ The multivariate Chebyshev polynomial of degree 
+\begin_inset Formula $\bar{j}$
+\end_inset
+
+ is 
+\begin_inset Formula 
+\[
+T_{\bar{j}}\left(p\right)=\prod_{d=1}^{D}T_{j_{d}}\left(p_{d}\right).
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Tensor based Chebyshev interpolation of a target function 
+\begin_inset Formula $y(x)$
+\end_inset
+
+ for (multi-index) degree 
+\begin_inset Formula $\bar{N}=\left(N_{1},\ldots,N_{D}\right)$
+\end_inset
+
+ is given by 
+\begin_inset Formula 
+\begin{equation}
+f(x)=\sum_{0\leq\bar{j}\leq\bar{N}}c_{\bar{j}}T_{\bar{j}}\left(p\left(x\right)\right)=\sum_{j_{1}=0}^{N_{1}}\cdots\sum_{j_{D}=0}^{N_{D}}c_{\left(j_{1},\ldots,j_{D}\right)}\prod_{d=1}^{D}T_{j_{d}}\left(p_{d}\right).\label{eq:Chebyshev-interpolation}
+\end{equation}
+
+\end_inset
+
+Here, 
+\begin_inset Formula $p_{d}$
+\end_inset
+
+ is the 
+\begin_inset Formula $d$
+\end_inset
+
+-th element of 
+\begin_inset Formula $p\left(x\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In order to calculate the coefficients 
+\begin_inset Formula $c_{\bar{j}}=c_{\left(j_{1},\ldots,j_{D}\right)}$
+\end_inset
+
+ we introduce the multivariate Chebyshev points (of second kind).
+ We consider a multi-index 
+\begin_inset Formula $\bar{k}$
+\end_inset
+
+ and set 
+\begin_inset Formula 
+\[
+q_{\bar{k}}=\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\in\left[-1,1\right]^{D}
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula 
+\begin{equation}
+q_{k_{d}}^{d}=\cos\left(\pi\frac{k_{d}}{N_{d}}\right),\;0\leq k_{d}\leq N_{d},\;d=1,\ldots,D.\label{eq:Chebyshev-points}
+\end{equation}
+
+\end_inset
+
+The mapping 
+\begin_inset Formula 
+\[
+x_{\bar{k}}=x\left(q_{\bar{k}}\right)=x\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)=\left[x\left(q_{k_{1}}^{1}\right),\ldots,x\left(q_{k_{D}}^{D}\right)\right]
+\]
+
+\end_inset
+
+defines the affine mapping from the standardised domain 
+\begin_inset Formula $\left[-1,1\right]^{D}$
+\end_inset
+
+ to the domain of the target function.
+\end_layout
+
+\begin_layout Standard
+The coefficients 
+\begin_inset Formula $c_{\bar{j}}=c_{\left(j_{1},\ldots,j_{D}\right)}$
+\end_inset
+
+ are given as 
+\begin_inset Formula 
+\begin{equation}
+c_{\bar{j}}=\left(\prod_{d=1}^{D}\frac{2^{\mathbbm{1}_{0<j_{d}<N_{d}}}}{N_{d}}\right)\sum_{k_{1}=0}^{N_{1}}\text{´´}\cdots\sum_{k_{D}=0}^{N_{D}}\text{´´}y\left(x\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\right)\prod_{d=1}^{D}T_{j_{d}}\left(q_{k_{d}}^{d}\right).\label{eq:Chebyshev-coefficients}
+\end{equation}
+
+\end_inset
+
+Here, the notation 
+\begin_inset Formula $\sum\text{´´}$
+\end_inset
+
+ represents the weighted sum where the first and last element are assigned
+ weight 
+\begin_inset Formula $\frac{1}{2}$
+\end_inset
+
+ and all other elements are assigned unit weight.
+\end_layout
+
+\begin_layout Standard
+A first critical aspect of multivariate Chebyshev interpolation is that
+ the method initially requires 
+\begin_inset Formula $\prod_{d=1}^{D}\left(N_{d}+1\right)$
+\end_inset
+
+ evaluations 
+\begin_inset Formula $y\left(x\left(q_{\bar{k}}\right)\right)$
+\end_inset
+
+ of the target function at the Chebyshev points 
+\begin_inset Formula $q_{\bar{k}}$
+\end_inset
+
+.
+ For larger dimensions (e.g.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $D>3$
+\end_inset
+
+) and computationally expensive target functions this can be a limitation.
+\end_layout
+
+\begin_layout Standard
+Another critical aspect of multivariate Chebyshev interpolation concerns
+ the linear algebra operations.
+ The evaluation of an interpolation 
+\begin_inset Formula $f(x)$
+\end_inset
+
+ as well as the calibration of each coefficient 
+\begin_inset Formula $c_{\bar{j}}$
+\end_inset
+
+ require a calculation of the form 
+\begin_inset Formula 
+\[
+\sum_{j_{1}=0}^{N_{1}}\cdots\sum_{j_{D}=0}^{N_{D}}a_{\left(j_{1},\ldots,j_{D}\right)}\prod_{d=1}^{D}b_{j_{d}}.
+\]
+
+\end_inset
+
+A straight forward implementation of such a nested sum involves an iterator
+ along the cartesian product of the indices 
+\begin_inset Formula 
+\[
+(0,\ldots,N_{1}),(0,\ldots,N_{2}),\ldots,(0,\ldots,N_{D}).
+\]
+
+\end_inset
+
+Within each iteration we have 
+\begin_inset Formula $D$
+\end_inset
+
+ multiplications.
+ This amounts to 
+\begin_inset Formula $D\,\prod_{d=1}^{D}\left(N_{d}+1\right)$
+\end_inset
+
+ multiplications potentially followed by an additions.
+ This illustrates the exponential growth of computational effort in terms
+ of number of dimensions 
+\begin_inset Formula $D$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In the following sections we will discuss how to implement above nested
+ sum efficiently by exploiting standardised high-level linear algebra operations
+ available in modern programming environments.
+\end_layout
+
+\begin_layout Section
+High-level Linear Algebra Operations
+\end_layout
+
+\begin_layout Standard
+In this section we discuss linear algebra operations that turn out to be
+ useful for the implementation of multivariate Chebyshev interpolation.
+ Such operations are often available in linear algebra modules of high-level
+ programming languages.
+ Our example implementations are based on Numpy, TensorFlow and Julia.
+ But we aim at avoiding language or module specific implementation choices.
+\end_layout
+
+\begin_layout Paragraph*
+Multi-dimensional arrays.
+\end_layout
+
+\begin_layout Standard
+A guiding principle of our algorithm is the representation of data structures
+ as multi-dimensional arrays.
+ Such multi-dimensional arrays are also called tensors.
+ Tensor operations are further discussed, e.g.
+\begin_inset space ~
+\end_inset
+
+in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "GV13"
+literal "false"
+
+\end_inset
+
+, Sec.
+ 12.4.
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Formula $D$
+\end_inset
+
+-dimensional array 
+\begin_inset Formula ${\cal A}=\left(a_{\bar{j}}\right)$
+\end_inset
+
+ is a structure consisting of elements 
+\begin_inset Formula $a_{\bar{j}}\in\mathbb{R}$
+\end_inset
+
+ where 
+\begin_inset Formula $\bar{j}$
+\end_inset
+
+ is a multi-index 
+\begin_inset Formula $\bar{j}=\left(j_{1},\ldots,j_{D}\right)$
+\end_inset
+
+.
+ For each axis (or 
+\emph on
+mode
+\emph default
+) 
+\begin_inset Formula $d=1,\ldots,D$
+\end_inset
+
+ we have an index range 
+\begin_inset Formula $j_{d}=1,\ldots,N_{d}$
+\end_inset
+
+.
+ The number of dimensions 
+\begin_inset Formula $D$
+\end_inset
+
+ is also called the order of the tensor.
+\end_layout
+
+\begin_layout Standard
+Obviously, vectors and matrices represent the special cases of one- and
+ two-dimensional arrays or order-1 and order-2 tensors.
+ Scalars can be viewed as order-0 tensors.
+\end_layout
+
+\begin_layout Standard
+The tuple 
+\begin_inset Formula $\left(N_{1},\ldots,N_{D}\right)$
+\end_inset
+
+ represents the shape of the tensor.
+ The shape specifies the index ranges for each axis.
+\end_layout
+
+\begin_layout Standard
+Elements of a tensor 
+\begin_inset Formula ${\cal A}$
+\end_inset
+
+ are accessed via the function call operator 
+\begin_inset Formula ${\cal A}\left(\cdot\right)$
+\end_inset
+
+.
+ That is 
+\begin_inset Formula 
+\[
+{\cal A}\left(j_{1},\ldots,j_{D}\right)=a_{\left(j_{1},\ldots,j_{D}\right)}.
+\]
+
+\end_inset
+
+Sub-tensors or slices are specified by replacing specific indices 
+\begin_inset Formula $j_{d}$
+\end_inset
+
+ by 
+\begin_inset Quotes eld
+\end_inset
+
+
+\begin_inset Formula $:$
+\end_inset
+
+
+\begin_inset Quotes erd
+\end_inset
+
+ For example, 
+\begin_inset Formula ${\cal A}\left(:,j_{D-1},j_{D}\right)$
+\end_inset
+
+ is an order-
+\begin_inset Formula $D-2$
+\end_inset
+
+ tensor of shape 
+\begin_inset Formula $\left(N_{1},\ldots,N_{D-2}\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Paragraph*
+Cartesian product of vectors.
+\end_layout
+
+\begin_layout Standard
+For a list of vectors 
+\begin_inset Formula $v^{1},\ldots,v^{D}$
+\end_inset
+
+ with 
+\begin_inset Formula $v^{d}=\left(v_{j_{d}}^{d}\right)_{j_{d}=1}^{N_{d}}$
+\end_inset
+
+ (
+\begin_inset Formula $d=1,\ldots,D$
+\end_inset
+
+) we define the cartesian product 
+\begin_inset Formula 
+\[
+V=\text{product}\left(v^{1},\ldots,v^{D}\right)
+\]
+
+\end_inset
+
+as the 
+\begin_inset Formula $\left(\prod_{d=1}^{D}N_{d}\right)\times D$
+\end_inset
+
+-matrix 
+\begin_inset Formula $V$
+\end_inset
+
+ with elements 
+\begin_inset Formula 
+\[
+V=\left[\begin{array}{ccccc}
+v_{1}^{1} & v_{1}^{2} & \ldots & v_{1}^{D-1} & v_{1}^{D}\\
+v_{1}^{1} & v_{1}^{2} & \ldots & v_{1}^{D-1} & v_{2}^{D}\\
+ &  & \vdots\\
+v_{N_{1}}^{1} & v_{N_{2}}^{2} & \ldots & v_{N_{D-1}}^{D-1} & v_{N_{D}-1}^{D}\\
+v_{N_{1}}^{1} & v_{N_{2}}^{2} & \ldots & v_{N_{D-1}}^{D-1} & v_{N_{D}}^{D}
+\end{array}\right].
+\]
+
+\end_inset
+
+In this ordering the elements in the last column change fastest and the
+ elements in the first column change slowest.
+\end_layout
+
+\begin_layout Standard
+We will apply the cartesian product operation for real vectors as well as
+ for index vectors.
+ In particular, the cartesian product of indices 
+\begin_inset Formula 
+\[
+J=\text{product}\left(\left(1,\ldots,N_{1}\right),\ldots,\left(1,\ldots,N_{D}\right)\right)
+\]
+
+\end_inset
+
+yields a vector of multi-indices 
+\begin_inset Formula $J=\left(\bar{j}\right)_{\bar{j}}$
+\end_inset
+
+ that allows to iterate the elements of a tensor 
+\begin_inset Formula ${\cal A}=\left(a_{\bar{j}}\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Paragraph*
+Re-shaping tensors.
+\end_layout
+
+\begin_layout Standard
+Reshaping changes the order of a tensor but keeps the data elements unchanged.
+ The most basic form of re-shaping a tensor is the flattening or vectorisation.
+ We define 
+\begin_inset Formula 
+\[
+\text{vec}\left({\cal A}\right)=\left[\begin{array}{c}
+a_{\left(1,1,\ldots,1,1\right)}\\
+a_{\left(1,1,\ldots,1,2\right)}\\
+\vdots\\
+a_{\left(N_{1},N_{2},\ldots,N_{D-1},N_{D}-1\right)}\\
+a_{\left(N_{1},N_{2},\ldots,N_{D-1},N_{D}\right)}
+\end{array}\right]=\left[a_{\bar{j}}\right]_{\bar{j}\in J}.
+\]
+
+\end_inset
+
+That is, we align the tensor elements with the last axis changing fastest
+ and the first axis changing slowest similarly as in the cartesian product
+ specification.
+\end_layout
+
+\begin_layout Standard
+A general re-shape operation 
+\begin_inset Formula 
+\[
+{\cal B}=\text{reshape}\left({\cal A},\left(M_{1},\ldots,M_{E}\right)\right)
+\]
+
+\end_inset
+
+of a tensor 
+\begin_inset Formula ${\cal A}$
+\end_inset
+
+ with shape 
+\begin_inset Formula $\left(N_{1},\ldots,N_{D}\right)$
+\end_inset
+
+ into a tensor 
+\begin_inset Formula ${\cal B}$
+\end_inset
+
+ with shape 
+\begin_inset Formula $\left(M_{1},\ldots,M_{E}\right)$
+\end_inset
+
+ and 
+\begin_inset Formula 
+\[
+\prod_{d=1}^{D}N_{d}=\prod_{e=1}^{E}M_{e}
+\]
+
+\end_inset
+
+is defined via 
+\begin_inset Formula 
+\[
+\text{vec}\left({\cal A}\right)=\text{vec}\left({\cal B}\right).
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Element-wise tensor multiplication with broadcasting.
+\end_layout
+
+\begin_layout Standard
+Element-wise tensor multiplication is used to delegate calculations to efficient
+ low-level implementations utilising e.g.
+\begin_inset space ~
+\end_inset
+
+BLAS routines and parallelisation.
+ This approach is particularly efficient when combined with the concept
+ of broadcasting.
+\end_layout
+
+\begin_layout Standard
+Consider two tensors 
+\begin_inset Formula ${\cal A}=\left(a_{\bar{j}}\right)$
+\end_inset
+
+ and 
+\begin_inset Formula ${\cal B}=\left(b_{\bar{j}}\right)$
+\end_inset
+
+ with shape 
+\begin_inset Formula $\left(N_{1},\ldots,N_{D}\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $\left(M_{1},\ldots,M_{D}\right)$
+\end_inset
+
+.
+ We impose the constraint that 
+\begin_inset Formula 
+\[
+N_{d}=M_{d}\;\text{or}\;N_{d}=1\;\text{or}\;M_{d}=1\;\text{for}\;d=1,\ldots,D.
+\]
+
+\end_inset
+
+The element-wise product with broadcasting 
+\begin_inset Formula 
+\[
+{\cal C}={\cal A}\;{.*}\;{\cal B}
+\]
+
+\end_inset
+
+yields a tensor 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+ with shape 
+\begin_inset Formula 
+\[
+\left(\max\left\{ N_{1},M_{1}\right\} ,\ldots,\max\left\{ N_{D},M_{D}\right\} \right).
+\]
+
+\end_inset
+
+The elements 
+\begin_inset Formula $c_{\bar{j}}=c_{\left(j_{1},\ldots,j_{D}\right)}$
+\end_inset
+
+ of the resulting tensor 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+ are 
+\begin_inset Formula 
+\[
+c_{\left(j_{1},\ldots,j_{D}\right)}=a_{\left(\min\left\{ j_{1},N_{1}\right\} ,\ldots,\min\left\{ j_{D},N_{D}\right\} \right)}\cdot b_{\left(\min\left\{ j_{1},M_{1}\right\} ,\ldots,\min\left\{ j_{D},M_{D}\right\} \right)}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Element-wise multiplication with broadcasting is the standard behaviour
+ for multiplication of multi-dimensional arrays in Numpy and TensorFlow.
+ In Julia it is implemented by the .* operator.
+\end_layout
+
+\begin_layout Paragraph*
+Generalised matrix multiplication.
+\end_layout
+
+\begin_layout Standard
+The Python Enhancement Proposal (PEP) 465 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Smi14"
+literal "false"
+
+\end_inset
+
+ specifies a matrix multiplication that generalises to multi-dimensional
+ arrays.
+ This operation is implemented in Numpy and TensorFlow as the 
+\emph on
+matmul
+\emph default
+ function.
+\end_layout
+
+\begin_layout Standard
+Suppose, we have two tensors 
+\begin_inset Formula ${\cal A}$
+\end_inset
+
+ and 
+\begin_inset Formula ${\cal B}$
+\end_inset
+
+ with shape 
+\begin_inset Formula $\left(N_{1},\ldots,N_{D}\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $\left(M_{1},\ldots,M_{D}\right)$
+\end_inset
+
+.
+ We require that 
+\begin_inset Formula $D\geq2$
+\end_inset
+
+, 
+\begin_inset Formula 
+\[
+N_{d}=M_{d}\;\text{or}\;N_{d}=1\;\text{or}\;M_{d}=1\;\text{for}\;d=1,\ldots,D-2,
+\]
+
+\end_inset
+
+and 
+\begin_inset Formula 
+\[
+N_{D}=M_{D-1}.
+\]
+
+\end_inset
+
+The generalised matrix multiplication is defined as 
+\begin_inset Formula 
+\[
+{\cal C}=\text{matmul}\left({\cal A},{\cal B}\right).
+\]
+
+\end_inset
+
+The result tensor 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+ is of shape 
+\begin_inset Formula 
+\[
+\left(\max\left\{ N_{1},M_{1}\right\} ,\ldots,\max\left\{ N_{D-2},M_{D-2}\right\} ,N_{D-1},M_{D}\right).
+\]
+
+\end_inset
+
+And the elements of 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+ are calculated as 
+\begin_inset Formula 
+\[
+{\cal C}\left(:,i,j\right)=\sum_{k=1}^{N_{D}}{\cal A}\left(:,i,k\right)\;{.*}\;{\cal B}\left(:,k,j\right)
+\]
+
+\end_inset
+
+for 
+\begin_inset Formula $i=1,\ldots,N_{d-1}$
+\end_inset
+
+ and 
+\begin_inset Formula $j=1,\ldots,M_{d}$
+\end_inset
+
+.
+ Here, 
+\begin_inset Formula ${\cal C}\left(:,i,j\right)$
+\end_inset
+
+ is the tensor of order 
+\begin_inset Formula $D-2$
+\end_inset
+
+ where we fix the last two axes of 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+.
+ Analogously, 
+\begin_inset Formula ${\cal A}\left(:,i,k\right)$
+\end_inset
+
+ and 
+\begin_inset Formula ${\cal B}\left(:,k,j\right)$
+\end_inset
+
+ are specified.
+\end_layout
+
+\begin_layout Standard
+We note that the generalised matrix multiplication can be related to the
+ 
+\emph on
+modal product
+\emph default
+ of tensors and matrices.
+ Consider a matrix 
+\begin_inset Formula ${\cal M}$
+\end_inset
+
+ of shape 
+\begin_inset Formula $\left(M_{1},M_{2}\right)$
+\end_inset
+
+ with 
+\begin_inset Formula $M_{2}=N_{d}$
+\end_inset
+
+.
+ The mode-
+\begin_inset Formula $d$
+\end_inset
+
+ product 
+\begin_inset Formula 
+\[
+{\cal C}={\cal A}\times_{d}{\cal M}
+\]
+
+\end_inset
+
+yields a tensor of shape 
+\begin_inset Formula 
+\[
+\left(N_{1},\ldots,N_{d-1},M_{1},N_{d+1},N_{D}\right).
+\]
+
+\end_inset
+
+The elements of 
+\begin_inset Formula ${\cal C}=\left(c_{\left(j_{1},\ldots,j_{D}\right)}\right)$
+\end_inset
+
+ are calculated as 
+\begin_inset Formula 
+\[
+{\cal C}{\left(j_{1},\ldots,j_{d-1},i,j_{d+1},j_{D}\right)}=\sum_{k=1}^{N_{d}}{\cal M}\left(i,k\right){\cal A}{\left(j_{1},\ldots,j_{d-1},k,j_{d+1},j_{D}\right)}
+\]
+
+\end_inset
+
+for 
+\begin_inset Formula $i=1,\ldots,M_{1}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It turns out that the mode-
+\begin_inset Formula $D$
+\end_inset
+
+ product along the last axis is 
+\begin_inset Formula 
+\[
+{\cal A}\times_{D}{\cal M}=\text{matmul}\left({\cal A},\text{reshape}\left({\cal M}^{\top},\left(1,\ldots,1,M_{2},M_{1}\right)\right)\right).
+\]
+
+\end_inset
+
+We will use this observation to formulate Chebyshev interpolation as a sequence
+ of high-level 
+\begin_inset Formula $\text{matmul}\left(\cdot\right)$
+\end_inset
+
+ operations where we can rely on efficient low-level implementations.
+\end_layout
+
+\begin_layout Section
+Reformulated Chebyshev Interpolation
+\end_layout
+
+\begin_layout Standard
+We return to the task of calculating nested sums of the form 
+\begin_inset Formula 
+\[
+\sum_{j_{1}=0}^{N_{1}}\cdots\sum_{j_{D}=0}^{N_{D}}a_{\left(j_{1},\ldots,j_{D}\right)}\prod_{d=1}^{D}b_{j_{d}}.
+\]
+
+\end_inset
+
+The coefficients 
+\begin_inset Formula $a_{\left(j_{1},\ldots,j_{D}\right)}$
+\end_inset
+
+ can be aligned in an order-
+\begin_inset Formula $D$
+\end_inset
+
+ tensor 
+\begin_inset Formula ${\cal A}$
+\end_inset
+
+.
+ of shape 
+\begin_inset Formula $\left(N_{1}+1,\ldots,N_{D}+1\right)$
+\end_inset
+
+.
+ Similarly, the Chebyshev polynomial values 
+\begin_inset Formula $b_{j_{d}}$
+\end_inset
+
+ can be arranged as 
+\begin_inset Formula $D$
+\end_inset
+
+ matrices 
+\begin_inset Formula ${\cal B}^{d}$
+\end_inset
+
+ of shape 
+\begin_inset Formula $\left(1,N_{d}+1\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+With this notation the nested sum becomes a sequence of modal products 
+\begin_inset Formula 
+\[
+\sum_{j_{1}=0}^{N_{1}}\cdots\sum_{j_{D}=0}^{N_{D}}a_{\left(j_{1},\ldots,j_{D}\right)}\prod_{d=1}^{D}b_{j_{d}}={\cal C}\left(1,\ldots,1\right)
+\]
+
+\end_inset
+
+where the order 
+\begin_inset Formula $D$
+\end_inset
+
+ tensor 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+ with shape 
+\begin_inset Formula $\left(1,\ldots,1\right)$
+\end_inset
+
+ is 
+\begin_inset Formula 
+\[
+{\cal C}=\left(\left({\cal A}\times_{D}{\cal B}^{D}\right)\times_{D-1}\ldots\right)\times_{1}{\cal B}^{1}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The property that the multivariate Chebyshev interpolation formula can be
+ written as modal product is also observed in 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "sec. 5.1"
+key "Poe20"
+literal "false"
+
+\end_inset
+
+.
+ We also note that the sequence of modal products is invariant with respect
+ to its ordering.
+ See 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "Theorem 12.4.1"
+key "GV13"
+literal "false"
+
+\end_inset
+
+.
+ Thus, we could also calculate 
+\begin_inset Formula 
+\[
+{\cal C}=\left(\left({\cal A}\times_{1}{\cal B}^{1}\right)\times_{2}\ldots\right)\times_{D}{\cal B}^{D}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Chebyshev batch calculation.
+\end_layout
+
+\begin_layout Standard
+The interpolation function 
+\begin_inset Formula $f$
+\end_inset
+
+ from equation (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Chebyshev-interpolation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) often needs to be evaluated for various inputs 
+\begin_inset Formula $x^{1},\ldots,x^{N}$
+\end_inset
+
+.
+ In such a context we call 
+\begin_inset Formula $N$
+\end_inset
+
+ (without subscript) the batch size for evaluation.
+ In order to utilize BLAS routines and parallelisation we want to avoid
+ manual iteration over the elements of a batch.
+ Instead, we carefully use broadcasting to vectorise calculations.
+\end_layout
+
+\begin_layout Standard
+Input to the Chebyshev batch calculation are a matrix 
+\begin_inset Formula ${\cal P}$
+\end_inset
+
+ and an order-
+\begin_inset Formula $D$
+\end_inset
+
+ tensor 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+.
+ The matrix 
+\begin_inset Formula ${\cal P}$
+\end_inset
+
+ is of shape 
+\begin_inset Formula $\left(D,N\right)$
+\end_inset
+
+ and consists of points from the standardised domain 
+\begin_inset Formula $\left[-1,1\right]^{D}$
+\end_inset
+
+.
+ That is, 
+\begin_inset Formula 
+\[
+{\cal P}=\left[p\left(x^{1}\right),\ldots,p\left(x^{N}\right)\right].
+\]
+
+\end_inset
+
+The tensor 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+ is of shape 
+\begin_inset Formula $\left(N_{1}+1,\ldots,N_{D}+1\right)$
+\end_inset
+
+ and for the usage of interpolation consists of the Chebyshev coefficients
+ 
+\begin_inset Formula $c_{\bar{j}}$
+\end_inset
+
+ from rquation (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Chebyshev-coefficients"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+For each axis 
+\begin_inset Formula $d$
+\end_inset
+
+ and input row 
+\begin_inset Formula ${\cal P}\left(d,:\right)$
+\end_inset
+
+ we calculate a matrix of Chebyshev polynomial values 
+\begin_inset Formula ${\cal T}^{d}$
+\end_inset
+
+ of shape 
+\begin_inset Formula $\left(N_{d}+1,N\right)$
+\end_inset
+
+ with entries 
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}{\cal T}^{d}\left(1,:\right) & =\left(1,\ldots,1\right),\\
+{\cal T}^{d}\left(2,:\right) & ={\cal P}\left(d,:\right),\\
+{\cal T}^{d}\left(j,:\right) & =2\,{\cal P}\left(d,:\right)\;{.*}\;{\cal T}^{d}\left(j-1,:\right)-{\cal T}^{d}\left(j-2,:\right),
+\end{aligned}
+\label{eq:multi-Chebyshev-polynomial}
+\end{equation}
+
+\end_inset
+
+for 
+\begin_inset Formula $j=3,\ldots,N_{d}+1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+With algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-batch-calculation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ we calculate a vector 
+\begin_inset Formula 
+\[
+{\cal R}=\left[f\left(x^{1}\right),\ldots,f\left(x^{N}\right)\right]^{\top}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+DontPrintSemicolon
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+KwIn{
+\end_layout
+
+\begin_layout Plain Layout
+
+  Tensor ${
+\backslash
+cal C}$ of shape $
+\backslash
+left(N_{1}+1,
+\backslash
+ldots,N_{D}+1
+\backslash
+right)$,
+\end_layout
+
+\begin_layout Plain Layout
+
+  matrix ${
+\backslash
+cal P}$ of shape $
+\backslash
+left(D,N
+\backslash
+right)$.
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+KwOut{Vector ${
+\backslash
+cal R}$ shape $
+\backslash
+left(N
+\backslash
+right)$.}
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\end_layout
+
+\begin_layout Plain Layout
+
+Initialise ${
+\backslash
+cal R}
+\backslash
+leftarrow
+\backslash
+text{reshape}
+\backslash
+left({
+\backslash
+cal C},
+\backslash
+left(1,N_{1}+1,
+\backslash
+ldots,N_{D}+1
+\backslash
+right)
+\backslash
+right)$ by adding a trivial first axis.
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+For{$d 
+\backslash
+leftarrow D,D-1,
+\backslash
+ldots,1$}{
+\end_layout
+
+\begin_layout Plain Layout
+
+  Use ${
+\backslash
+cal P}
+\backslash
+left(d,:
+\backslash
+right)$ and calculate Chebyshev matrix
+\end_layout
+
+\begin_layout Plain Layout
+
+    ${
+\backslash
+cal T}^{d}$ of shape $
+\backslash
+left(N_{d}+1,N
+\backslash
+right)$ via (
+\backslash
+ref{eq:multi-Chebyshev-polynomial}).
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+  Re-arrange ${
+\backslash
+cal T}^{d}
+\backslash
+leftarrow
+\backslash
+text{reshape}
+\backslash
+left({{
+\backslash
+cal T}^{d}}^{
+\backslash
+top},
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\backslash
+left(N,
+\backslash
+underbrace{1,
+\backslash
+ldots,1}_{k
+\backslash
+text{ times}},N_{d}+1,1
+\backslash
+right)
+\backslash
+right)$
+\end_layout
+
+\begin_layout Plain Layout
+
+    where $k=
+\backslash
+max
+\backslash
+left
+\backslash
+{ d-2,0
+\backslash
+right
+\backslash
+}$.
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+If{$d=1$ (last iteration)}{
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\backslash
+tcp{${
+\backslash
+cal R}$ is an order-2 tensor of shape $
+\backslash
+left(R_{1},R_{2}
+\backslash
+right)$.}
+\end_layout
+
+\begin_layout Plain Layout
+
+    Adjust ${
+\backslash
+cal R}
+\backslash
+leftarrow
+\backslash
+text{reshape}
+\backslash
+left({
+\backslash
+cal R},
+\backslash
+left(R_{1},1,R_{2}
+\backslash
+right)
+\backslash
+right)$.
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+  }
+\end_layout
+
+\begin_layout Plain Layout
+
+  Calculate ${
+\backslash
+cal R}
+\backslash
+leftarrow
+\backslash
+text{matmul}
+\backslash
+left({
+\backslash
+cal R},{
+\backslash
+cal T}^{d}
+\backslash
+right)$.
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+tcp{If $d>1$ this operation yields an order-$d+1$ tensor of shape $
+\backslash
+left(N,N_{1}+1,
+\backslash
+ldots,N_{d-1}+1,1
+\backslash
+right)$.
+\end_layout
+
+\begin_layout Plain Layout
+
+       In the last iteration with $d=1$ we get an order-3 tensor of shape
+ $
+\backslash
+left(N,1,1
+\backslash
+right)$.}
+\end_layout
+
+\begin_layout Plain Layout
+
+  Remove trivial last axis via
+\end_layout
+
+\begin_layout Plain Layout
+
+  ${
+\backslash
+cal R}
+\backslash
+leftarrow
+\backslash
+text{reshape}
+\backslash
+left({
+\backslash
+cal R},
+\backslash
+left(N,N_{1}+1,
+\backslash
+ldots,N_{d-1}+1
+\backslash
+right)
+\backslash
+right)$
+\end_layout
+
+\begin_layout Plain Layout
+
+  ($d>1$) or ${
+\backslash
+cal R}
+\backslash
+leftarrow
+\backslash
+text{reshape}
+\backslash
+left({
+\backslash
+cal R},
+\backslash
+left(N,1
+\backslash
+right)
+\backslash
+right)$ ($d=1$).
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\begin_layout Plain Layout
+
+Remove remaining trivial axis ${
+\backslash
+cal R}
+\backslash
+leftarrow
+\backslash
+text{reshape}
+\backslash
+left({
+\backslash
+cal R},
+\backslash
+left(N
+\backslash
+right)
+\backslash
+right)$.
+ 
+\backslash
+;
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "alg:Chebyshev-batch-calculation"
+
+\end_inset
+
+Chebyshev batch calculation.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We assess the computational effort of the Chebyshev batch calculation in
+ algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-batch-calculation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ Re-shape and matrix transposition operations are cheap because they do
+ not require data access or data manipulation.
+ We count multiplications which may be followed by an addition as a single
+ operation.
+\end_layout
+
+\begin_layout Standard
+Chebyshev matrix calculation in step 3 amounts to 
+\begin_inset Formula 
+\[
+2N\sum_{d=1}^{D}\left(N_{d}-1\right)
+\]
+
+\end_inset
+
+operations.
+ This is more or less 
+\begin_inset Formula ${\cal O}\left(N\right)$
+\end_inset
+
+ and relatively cheap.
+\end_layout
+
+\begin_layout Standard
+The computationally expensive step is the generalised matrix multiplication
+ in step 9.
+ Here we count 
+\begin_inset Formula 
+\[
+N\sum_{d-1}^{D}\underbrace{\left(\prod_{j=1}^{d-1}\left(N_{j}+1\right)\right)}_{{\text{broadcasting}}}\underbrace{\left(N_{d}+1\right)}_{\text{multiplications\;.*}}=N\sum_{d-1}^{D}\,\prod_{j=1}^{d}\left(N_{j}+1\right)
+\]
+
+\end_inset
+
+operations.
+ For 
+\begin_inset Formula $\hat{N}=\max\left\{ N_{1},\ldots,N_{D}\right\} \geq1$
+\end_inset
+
+ we get the estimate 
+\begin_inset Formula 
+\[
+N\sum_{d-1}^{D}\,\prod_{j=1}^{d}\left(N_{j}+1\right)\leq N\sum_{d-1}^{D}\left(\hat{N}+1\right)^{d}<2N\left(\hat{N}+1\right)^{D}.
+\]
+
+\end_inset
+
+The proposed algorithm still suffers from the exponential growth in the
+ number of dimensions 
+\begin_inset Formula $D$
+\end_inset
+
+.
+ However, we save a factor of 
+\begin_inset Formula $D/2$
+\end_inset
+
+ compared to a standard implementation via cartesian product.
+\end_layout
+
+\begin_layout Paragraph*
+Chebyshev coefficient calibration.
+\end_layout
+
+\begin_layout Standard
+Now, we analyse the calculation of the Chebyshev coefficients 
+\begin_inset Formula $c_{\bar{j}}$
+\end_inset
+
+ from equation (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Chebyshev-coefficients"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+),
+\begin_inset Formula 
+\[
+c_{\bar{j}}=\underbrace{\left(\prod_{d=1}^{D}\frac{2^{\mathbbm{1}_{0<j_{d}<N_{d}}}}{N_{d}}\right)}_{v_{\bar{j}}}\sum_{k_{1}=0}^{N_{1}}\text{´´}\cdots\sum_{k_{D}=0}^{N_{D}}\text{´´}y\left(x\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\right)\prod_{d=1}^{D}T_{j_{d}}\left(q_{k_{d}}^{d}\right)
+\]
+
+\end_inset
+
+for
+\begin_inset Formula 
+\[
+\bar{j}\in J=\text{product}\left(\left(0,\ldots,N_{1}\right),\ldots,\left(0,\ldots,N_{D}\right)\right).
+\]
+
+\end_inset
+
+ We will demonstrate how this calculation can be related to the Chebyshev
+ batch calculation from algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-batch-calculation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Starting point for the calculation are multivariate Chebyshev points 
+\begin_inset Formula $q_{\bar{k}}=\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\in\left[-1,1\right]^{D}$
+\end_inset
+
+ from equation (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Chebyshev-points"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) for 
+\begin_inset Formula $\bar{k}\in J$
+\end_inset
+
+.
+ The multivariate Chebyshev points are collected as cartesian product in
+ the matrix 
+\begin_inset Formula ${\cal Q}$
+\end_inset
+
+of shape 
+\begin_inset Formula $\left(\prod_{d=1}^{D}\left(N_{d}+1\right),D\right)$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\[
+Q=\left[q_{\bar{k}}\right]_{\bar{k}\in J}.
+\]
+
+\end_inset
+
+For each row 
+\begin_inset Formula $q_{\bar{k}}$
+\end_inset
+
+ in 
+\begin_inset Formula $Q$
+\end_inset
+
+ we calculate the target function value vector 
+\begin_inset Formula $\left[y_{\bar{k}}\right]_{\bar{k}\in J}$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\begin{equation}
+\left[y_{\bar{k}}\right]_{\bar{k}\in J}=\left[y\left(x\left(q_{\bar{k}}\right)\right)\right]_{\bar{k}\in J}.\label{eq:function-values}
+\end{equation}
+
+\end_inset
+
+The weighs of the 
+\begin_inset Formula $\sum\text{´´}$
+\end_inset
+
+ operator are
+\begin_inset Formula 
+\begin{equation}
+\left[w_{\bar{k}}\right]_{\bar{k}\in J}=\left[2^{-\left(N_{d}-\sum_{d=1}^{D}\mathbbm{1}_{0<k_{d}<N_{d}}\right)}\right]_{\bar{k}\in J}.\label{eq:function-weights}
+\end{equation}
+
+\end_inset
+
+Similarly, we calcute the vector of coefficient weights 
+\begin_inset Formula 
+\begin{equation}
+\left[v_{\bar{j}}\right]_{\bar{j}\in J}=\left[\prod_{d=1}^{D}\frac{2^{\mathbbm{1}_{0<j_{d}<N_{d}}}}{N_{d}}\right]_{\bar{j}\in J}.\label{eq:coefficient-weights}
+\end{equation}
+
+\end_inset
+
+We note that calculation of the weight vectors 
+\begin_inset Formula $\left[w_{\bar{k}}\right]_{\bar{k}\in J}$
+\end_inset
+
+ and 
+\begin_inset Formula $\left[v_{\bar{j}}\right]_{\bar{j}\in J}$
+\end_inset
+
+ typically can also be vectorisied and do not require manual iteration over
+ the index 
+\begin_inset Formula $\bar{k}$
+\end_inset
+
+ or 
+\begin_inset Formula $\bar{j}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+With the weights 
+\begin_inset Formula $\left[w_{\bar{k}}\right]_{\bar{k}\in J}$
+\end_inset
+
+ and function values 
+\begin_inset Formula $\left[y_{\bar{k}}\right]_{\bar{k}\in J}$
+\end_inset
+
+ we can re-write the coefficient calculation using standard sum operator
+ and
+\begin_inset Formula 
+\[
+\frac{c_{\bar{j}}}{v_{\bar{j}}}=\sum_{k_{1}=0}^{N_{1}}\cdots\sum_{k_{D}=0}^{N_{D}}w_{\bar{k}}y_{\bar{k}}\prod_{d=1}^{D}T_{j_{d}}\left(q_{k_{d}}^{d}\right).
+\]
+
+\end_inset
+
+From equations (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Chebyshev-polynomial"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) and (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:multi-Chebyshev-polynomial"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) we observe that
+\begin_inset Formula 
+\begin{align*}
+T_{j_{d}}\left(q_{k_{d}}^{d}\right) & =\cos\left(j_{d}\arccos\left(\cos\left(\pi\frac{k_{d}}{N_{d}}\right)\right)\right)\\
+ & =\cos\left(k_{d}\arccos\left(\cos\left(\pi\frac{j_{d}}{N_{d}}\right)\right)\right)\\
+ & =T_{k_{d}}\left(q_{j_{d}}^{d}\right).
+\end{align*}
+
+\end_inset
+
+This yields the desired form
+\begin_inset Formula 
+\begin{equation}
+\frac{c_{\bar{j}}}{v_{\bar{j}}}=\sum_{k_{1}=0}^{N_{1}}\cdots\sum_{k_{D}=0}^{N_{D}}w_{\bar{k}}y_{\bar{k}}\prod_{d=1}^{D}T_{k_{d}}\left(q_{j_{d}}^{d}\right).\label{eq:Chebyshev-calibration}
+\end{equation}
+
+\end_inset
+
+The right-hand side of equation (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Chebyshev-calibration"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) is of the same form as the Chebyshev interpolation formula in equation
+ (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Chebyshev-interpolation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+ We only need to identify the coefficients 
+\begin_inset Formula $c_{\bar{k}}$
+\end_inset
+
+ with the weighted function values 
+\begin_inset Formula $w_{\bar{k}}y_{\bar{k}}$
+\end_inset
+
+ and evaluate the interpolation at the Chebyshev points 
+\begin_inset Formula $q_{\bar{j}}$
+\end_inset
+
+.
+ Thus, we can re-use algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-batch-calculation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ for efficient implementation.
+\end_layout
+
+\begin_layout Standard
+We summarise the Chebyshev coefficient calibration in algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-coefficient-calibration"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+DontPrintSemicolon
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+KwIn{
+\end_layout
+
+\begin_layout Plain Layout
+
+  List of degrees $
+\backslash
+left(N_{1},
+\backslash
+ldots,N_{D}
+\backslash
+right)$.
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+KwOut{Tensor ${
+\backslash
+cal C}$ of shape $
+\backslash
+left(N_{1}+1,
+\backslash
+ldots,N_{D}+1
+\backslash
+right)$ with Chebyshev coefficients.}
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\end_layout
+
+\begin_layout Plain Layout
+
+Calculate $J=
+\backslash
+text{product}
+\backslash
+left(
+\backslash
+left(0,
+\backslash
+ldots,N_{1}
+\backslash
+right),
+\backslash
+ldots,
+\backslash
+left(0,
+\backslash
+ldots,N_{D}
+\backslash
+right)
+\backslash
+right)$.
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+Calculate cartesian product of Chebyshev points
+\end_layout
+
+\begin_layout Plain Layout
+
+  $Q=
+\backslash
+left[q_{
+\backslash
+bar{k}}
+\backslash
+right]_{
+\backslash
+bar{k}
+\backslash
+in J}$ from (
+\backslash
+ref{eq:Chebyshev-points}).
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+Calculate function values $
+\backslash
+left[y_{
+\backslash
+bar{k}}
+\backslash
+right]_{
+\backslash
+bar{k}
+\backslash
+in J}$ from (
+\backslash
+ref{eq:function-values}) 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+Calculate function weights $
+\backslash
+left[w_{
+\backslash
+bar{k}}
+\backslash
+right]_{
+\backslash
+bar{k}
+\backslash
+in J}$ from (
+\backslash
+ref{eq:function-weights}) 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+Form coefficient tensor 
+\end_layout
+
+\begin_layout Plain Layout
+
+  ${
+\backslash
+cal Y} = 
+\backslash
+text{reshape}
+\backslash
+left(
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\backslash
+left[w_{
+\backslash
+bar{k}}
+\backslash
+right]_{
+\backslash
+bar{k}
+\backslash
+in J}
+\backslash
+;.*
+\backslash
+;
+\backslash
+left[y_{
+\backslash
+bar{k}}
+\backslash
+right]_{
+\backslash
+bar{k}
+\backslash
+in J},
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\backslash
+left(N_1+1,
+\backslash
+ldots,N_D+1
+\backslash
+right)
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+right)$ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+Call algorithm 
+\backslash
+ref{alg:Chebyshev-batch-calculation} with inputs ${
+\backslash
+cal Y}$ and $Q^
+\backslash
+top$.
+\end_layout
+
+\begin_layout Plain Layout
+
+  This yields a vector $
+\backslash
+left[r_{
+\backslash
+bar{j}}
+\backslash
+right]_{
+\backslash
+bar{j}
+\backslash
+in J}$.
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+Calculate coefficient weights $
+\backslash
+left[v_{
+\backslash
+bar{j}}
+\backslash
+right]_{
+\backslash
+bar{j}
+\backslash
+in J}$ from (
+\backslash
+ref{eq:coefficient-weights}).
+ 
+\backslash
+;
+\end_layout
+
+\begin_layout Plain Layout
+
+Calculate Chebyshev coefficient tensor
+\end_layout
+
+\begin_layout Plain Layout
+
+  ${
+\backslash
+cal C} = 
+\backslash
+text{reshape}
+\backslash
+left(
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\backslash
+left[v_{
+\backslash
+bar{j}}
+\backslash
+right]_{
+\backslash
+bar{j}
+\backslash
+in J}
+\backslash
+;.*
+\backslash
+;
+\backslash
+left[r_{
+\backslash
+bar{j}}
+\backslash
+right]_{
+\backslash
+bar{j}
+\backslash
+in J},
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\backslash
+left(N_1+1,
+\backslash
+ldots,N_D+1
+\backslash
+right)
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+right)$ 
+\backslash
+;
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "alg:Chebyshev-coefficient-calibration"
+
+\end_inset
+
+Chebyshev coefficient calibration.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The key drivers of compuatational effort for algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-coefficient-calibration"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ lie in the function evaluation in step 3 and in the call of algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-batch-calculation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ in step 6.
+ Step 3 requires 
+\begin_inset Formula $\prod_{d=1}^{D}\left(N_{d}+1\right)$
+\end_inset
+
+ evaluations of the target function.
+ In step 6 we call algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-batch-calculation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ with batch size 
+\begin_inset Formula $N=\prod_{d=1}^{D}\left(N_{d}+1\right)$
+\end_inset
+
+.
+ Consequently, we end up with
+\begin_inset Formula 
+\[
+\prod_{d=1}^{D}\left(N_{d}+1\right)\,\sum_{d-1}^{D}\,\prod_{j=1}^{d}\left(N_{j}+1\right)\sim\prod_{d=1}^{D}\left(N_{d}+1\right)^{2}
+\]
+
+\end_inset
+
+operations.
+ This definitely remains the bottleneck of the method for larger dimensions.
+\end_layout
+
+\begin_layout Standard
+Besides the intrinsic computational effort, algorithm
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-batch-calculation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ and algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-coefficient-calibration"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ demontrate how calculations can be delegated to a few calls of generalised
+ matrix multiplications.
+ This allows exploiting efficient BLAS implementations and parallelisation.
+\end_layout
+
+\begin_layout Paragraph*
+Implementation.
+\end_layout
+
+\begin_layout Standard
+Implementations of algorithm
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-batch-calculation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ and algorithm 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "alg:Chebyshev-coefficient-calibration"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ are provided at 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+github.com/sschlenkrich/MultivariateChebyshev
+\end_layout
+
+\end_inset
+
+.
+ We choose Numpy and TensorFlow as packages for high-level linear algebra
+ operations.
+ Both packages are available in the Python programing language.
+ Moreover, we implement the algorithms in the Julia programing language.
+ Julia is designed as high-level high-performance language.
+ If nedded, Julia can also be accessed from Python.
+ A comparison of the implementations in 
+\family typewriter
+
+\begin_inset CommandInset href
+LatexCommand href
+name "src/multivariate_chebyshev_numpy.py"
+target "https://github.com/sschlenkrich/MultivariateChebyshev/blob/main/src/multivariate_chebyshev_numpy.py"
+literal "false"
+
+\end_inset
+
+
+\family default
+, 
+\family typewriter
+
+\begin_inset CommandInset href
+LatexCommand href
+name "src/multivariate_chebyshev_tensorflow.py"
+target "https://github.com/sschlenkrich/MultivariateChebyshev/blob/main/src/multivariate_chebyshev_tensorflow.py"
+literal "false"
+
+\end_inset
+
+
+\family default
+ and 
+\family typewriter
+
+\begin_inset CommandInset href
+LatexCommand href
+name "src/multivariate_chebyshev_julia.jl"
+target "https://github.com/sschlenkrich/MultivariateChebyshev/blob/main/src/multivariate_chebyshev_julia.jl"
+literal "false"
+
+\end_inset
+
+
+\family default
+ demonstrates that the proposed algorithms are rather generic.
+\end_layout
+
+\begin_layout Standard
+We use above implementations to demonstrate the usage of multivariate Chebyshev
+ implementation and to assess which module might be best suited from a performan
+ce perspective.
+\end_layout
+
+\begin_layout Section
+Case Study - Implied Volatility Surface of Heston Model
+\end_layout
+
+\begin_layout Standard
+In this section we describe numerical results when applying our Chebyshev
+ implementations to interpolate implied volatilities in a Heston model.
+ The example is chosen because on the one hand side Heston model is a relevant
+ model in practice to price FX and equity options.
+ On the other hand side pricing Vanilla options and calculating implied
+ volatility in Heston model is computationally feasible such that it can
+ be easily be used calibrate also relativelely large Chebyshev tensors.
+\end_layout
+
+\begin_layout Standard
+Implied volatility calculation with Chebyshev polynomials is also analysed
+ in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "GHMP19"
+literal "false"
+
+\end_inset
+
+.
+ This paper focusses on inverting the Black formula via bivariate interpolation.
+ Another related work is 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ZR20"
+literal "false"
+
+\end_inset
+
+.
+ In that paper the authors demonstrate that Chebyshev tensors can also be
+ applied to approximate implied volatility in the more Rough Bergomi model.
+\end_layout
+
+\begin_layout Standard
+Our focus in this section is comparing the computational effort of our implement
+ations using Numpy, TensorFlow and Julia.
+ In order to put the results into the context of the model we give a high-level
+ overview of our Heston model example.
+\end_layout
+
+\begin_layout Paragraph*
+Heston model specification.
+\end_layout
+
+\begin_layout Standard
+Heston model is a model for the price process of a financial asset 
+\begin_inset Formula $S_{t}$
+\end_inset
+
+.
+ The price process 
+\begin_inset Formula $S_{t}$
+\end_inset
+
+ is described by the diffusion
+\begin_inset Formula 
+\[
+\begin{aligned}dS_{t} & =\mu S_{t}dt+\sqrt{v_{t}}S_{t}dW_{t}^{S},\\
+dv_{t} & =\kappa\left(\theta-v_{t}\right)dt+\xi\sqrt{v_{t}}dW_{t}^{v},\\
+dW_{t}^{S}dW_{t}^{v} & =\rho dt,
+\end{aligned}
+\]
+
+\end_inset
+
+with initial conditions 
+\begin_inset Formula $S_{0}>0$
+\end_inset
+
+ and 
+\begin_inset Formula $v_{0}>0$
+\end_inset
+
+ at 
+\begin_inset Formula $t=0$
+\end_inset
+
+ and correlated Brownian motions 
+\begin_inset Formula $W_{t}^{S}$
+\end_inset
+
+ and 
+\begin_inset Formula $W_{t}^{v}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+For option pricing methods in Heston model we refer to the standard literature,
+ see e.g.
+ XYZ.
+ Implied volatilities for a given term (or time to maturity) 
+\begin_inset Formula $T$
+\end_inset
+
+ and strike price 
+\begin_inset Formula $K$
+\end_inset
+
+ are obtained by inverting Black's formula given a forward Vanilla option
+ price derived in Heston model.
+\end_layout
+
+\begin_layout Standard
+For implied volatility modelling we are interested in forward prices.
+ As a consequence, we can disregard the drift 
+\begin_inset Formula $\mu$
+\end_inset
+
+.
+ Implied volatility in Heston model is driven by the parameters of the squared
+ volatility process 
+\begin_inset Formula $v_{t}$
+\end_inset
+
+.
+ In particular, we have the following properties.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\sqrt{v_{0}}$
+\end_inset
+
+ controls short term volatility.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\sqrt{\theta}$
+\end_inset
+
+ controls long term volatility.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\log(2)/\kappa$
+\end_inset
+
+ represents the half life of the expectation of 
+\begin_inset Formula $v_{t}$
+\end_inset
+
+ moving from 
+\begin_inset Formula $v_{0}$
+\end_inset
+
+ to 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+ This controls the term structure of at-the-money volatilities.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\rho$
+\end_inset
+
+ controls the volatility skew (or volatility slope in strike direction).
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\xi$
+\end_inset
+
+ controls the volatility smile (or volatility curvature in strike direction).
+\end_layout
+
+\begin_layout Standard
+For our parametrisation of implied volatilities we will use two properties
+ of Heston model.
+\end_layout
+
+\begin_layout Paragraph*
+Expectation of squared volatility.
+\end_layout
+
+\begin_layout Standard
+The expectation of the squared volatility 
+\begin_inset Formula $v_{T}$
+\end_inset
+
+ for a given term 
+\begin_inset Formula $T\geq0$
+\end_inset
+
+ is given as
+\begin_inset Formula 
+\[
+\mathbb{E}\left[v_{T}\right]=v_{0}e^{-\kappa T}+\theta\left(1-e^{-\kappa T}\right).
+\]
+
+\end_inset
+
+We use this this property to define an 
+\emph on
+average standard deviation
+\emph default
+ of asset prices as
+\begin_inset Formula 
+\[
+\nu_{(v_{0},\theta,\kappa)}(T)=\sqrt{\left[v_{0}e^{-\kappa T}+\theta\left(1-e^{-\kappa T}\right)\right]T}.
+\]
+
+\end_inset
+
+The average standard deviation is used to normalise option strikes 
+\begin_inset Formula $K$
+\end_inset
+
+.
+ That is, We define the option moneyness as 
+\begin_inset Formula 
+\[
+{\cal M}=\frac{\log\left(K/S_{0}\right)}{\nu_{(v_{0},\theta,\kappa)}(T)}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Feller condition.
+\end_layout
+
+\begin_layout Standard
+The Feller condition for the squared volatility process is 
+\begin_inset Formula 
+\[
+\xi^{2}\leq2\kappa\theta.
+\]
+
+\end_inset
+
+This condition ensures that the squared volatility process remains positive,
+ i.e.
+ 
+\begin_inset Formula $v_{t}>0$
+\end_inset
+
+ for 
+\begin_inset Formula $t>0$
+\end_inset
+
+.
+ Violation of Feller condition e.g.
+ by high vol-of-vol parameter 
+\begin_inset Formula $\xi$
+\end_inset
+
+ is typically accepted to achieve reasonable fits in calibrations.
+ However, high vol-of-vol parameters may cause numerical instabilities.
+\end_layout
+
+\begin_layout Standard
+In order to control (or limit) the extend of Feller condition violation
+ we use a 
+\emph on
+Feller factor
+\emph default
+ parameter to parametrise volatility smile.
+ We define the Feller factor as 
+\begin_inset Formula 
+\[
+{\cal F}=\frac{\xi^{2}}{2\kappa\theta}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Implied volatility function parametrisation.
+\end_layout
+
+\begin_layout Standard
+For a given model or market observation implied volatility 
+\begin_inset Formula $\sigma_{IV}$
+\end_inset
+
+ is a function of the option term 
+\begin_inset Formula $T$
+\end_inset
+
+ and the strike price 
+\begin_inset Formula $K$
+\end_inset
+
+.
+ That is
+\begin_inset Formula 
+\[
+\sigma_{IV}\left(T,K\right)
+\]
+
+\end_inset
+
+also forms a volatility surface.
+\end_layout
+
+\begin_layout Standard
+For this analysis we extend the volatility surface function by the Heston
+ model parameters and apply a parameter transformation.
+ Our target function is 
+\begin_inset Formula $f:{\cal D}\rightarrow R$
+\end_inset
+
+ with 
+\begin_inset Formula ${\cal D}\subset\mathbb{R}^{8}$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\[
+f\left(x\right)=\sigma_{IV}\left(T,K;S_{0},v_{0},\theta,\kappa,\rho,\xi\right).
+\]
+
+\end_inset
+
+The target function argument 
+\begin_inset Formula $x$
+\end_inset
+
+ is specified as 
+\begin_inset Formula 
+\[
+x=\left[\begin{array}{c}
+x_{0}\\
+x_{1}\\
+x_{2}\\
+x_{3}\\
+x_{4}\\
+x_{5}\\
+x_{6}\\
+x_{7}
+\end{array}\right]=\left[\begin{array}{c}
+T\\
+{\cal M}\\
+S_{0}\\
+\sqrt{v_{0}}\\
+\sqrt{\theta/v_{0}}\\
+0.7/\kappa\\
+\rho\\
+{\cal F}
+\end{array}\right].
+\]
+
+\end_inset
+
+The input domain 
+\begin_inset Formula ${\cal D}$
+\end_inset
+
+ is the hyper-rectangle with boundaries as specified in Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Boundaries-of-function-domain"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="9" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Parameter
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Lower boundary
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Upper boundary
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+option term 
+\begin_inset Formula $T$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1/12$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $5.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+moneyness 
+\begin_inset Formula ${\cal M}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-3.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+initial asset price 
+\begin_inset Formula $S_{0}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+initial volatility 
+\begin_inset Formula $\sqrt{v_{0}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.10$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+long volatility ratio
+\begin_inset Formula $\sqrt{\theta/v_{0}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+decay half life 
+\begin_inset Formula $0.7/\kappa$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $5.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+correlation 
+\begin_inset Formula $\rho$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-0.80$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.80$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Feller factor 
+\begin_inset Formula ${\cal F}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.01$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $4.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Boundaries-of-function-domain"
+
+\end_inset
+
+Boundaries of function domain 
+\begin_inset Formula ${\cal D}$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Some repesentative volatility smiles of the target function and Chebyshev
+ interpolation using degrees 
+\begin_inset Formula $N_{d}=2$
+\end_inset
+
+ for all 
+\begin_inset Formula $d=1,\ldots,8$
+\end_inset
+
+ are illustrated in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-implied-volatility"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ In this graph lines represent target function and dots represent Chebyshev
+ interpolation.
+ Note that 
+\begin_inset Formula $N_{d}$
+\end_inset
+
+=2 corresponds to quadratic interpolation in strike direction.
+ We find that quadratic interpolation allows to capture the general shape
+ of the volatility surface.
+ However, there are still considerable differences between Heston model
+ target function and Chebyshev interpolation function.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figs/plot_smiles_figure.png
+	width 70text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Example-implied-volatility"
+
+\end_inset
+
+Example implied volatility smiles of Heston model and Chebyshev interpolation
+ with degrees 
+\begin_inset Formula $N_{d}=2$
+\end_inset
+
+ for all dimensions.
+ Lines represent target function and dots represent Chebyshev interpolation.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Performance Analysis.
+\end_layout
+
+\begin_layout Standard
+We analyse the computational performance of the methods.
+ For this exercise we use the eight-dimensional target function 
+\begin_inset Formula $f$
+\end_inset
+
+ for modelling Heston implied volatilities.We use an equal number of degrees
+ 
+\begin_inset Formula $N=N_{d}$
+\end_inset
+
+ across all dimensions 
+\begin_inset Formula $d=1,\ldots,8$
+\end_inset
+
+ and let 
+\begin_inset Formula $N$
+\end_inset
+
+ run from 
+\begin_inset Formula $1$
+\end_inset
+
+ to 
+\begin_inset Formula $3$
+\end_inset
+
+.
+ As benchmark we consider the Chebyshev coefficient calculation.
+ This routine is implemented in the function 
+\emph on
+chebyshev_coefficients
+\emph default
+ in our example implementations.
+ The computational effort of this rutine is proportional to the square of
+ number of Chebyshev points.
+\end_layout
+
+\begin_layout Standard
+We measure performance as run time on an Intel Core i7-8650U CPU with 1.90GHz,
+ 4 cores and 16 GB RAM.
+ For each 
+\begin_inset Formula $N_{d}$
+\end_inset
+
+ we run calculations five times, exclude minimum and maximum and average
+ the remaining three run times.
+ The results of our numerical experiment are summarised in Table XYZ.
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="5">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Degrees 
+\begin_inset Formula $N_{d}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Target function evaluation
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Numpy
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+TensorFlow
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Julia
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.06$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.006$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.018
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.005
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1.20
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.24
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.78
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Run time in seconds of Chebyshev tensor calibration.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+btprint "btPrintCited"
+bibfiles "refs/References"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
