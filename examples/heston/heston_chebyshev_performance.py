@@ -139,5 +139,5 @@ if __name__ == '__main__':
         3, 3, 3, 3, 3,
     ]
     res = run_performance_testing(perf_degrees, label_dict, pricer, root_path)
-    res.to_csv(root_path + 'examples/heston_chebyshev_performance.csv', sep=';')
+    res.to_csv(root_path + 'examples/heston/heston_chebyshev_performance.csv', sep=';')
     print(res)

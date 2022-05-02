@@ -3486,8 +3486,9 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Tabular
-<lyxtabular version="3" rows="4" columns="5">
+<lyxtabular version="3" rows="4" columns="6">
 <features tabularvalignment="middle">
+<column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
@@ -3503,6 +3504,15 @@ Degrees
 \end_inset
 
 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# Chebyshev points
 \end_layout
 
 \end_inset
@@ -3561,7 +3571,7 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $0.06$
+\begin_inset Formula $256$
 \end_inset
 
 
@@ -3573,7 +3583,7 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $0.006$
+\begin_inset Formula $0.0470$
 \end_inset
 
 
@@ -3585,7 +3595,22 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-0.018
+\begin_inset Formula $0.0020$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.0130$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3594,7 +3619,10 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-0.005
+\begin_inset Formula $0.0052$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3617,7 +3645,7 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $1.50$
+\begin_inset Formula $6,561$
 \end_inset
 
 
@@ -3629,7 +3657,10 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-1.20
+\begin_inset Formula $1.00$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3638,7 +3669,22 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-0.24
+\begin_inset Formula $0.31$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.17$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3647,7 +3693,10 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-0.78
+\begin_inset Formula $0.59$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3670,6 +3719,9 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $65,536$
+\end_inset
+
 
 \end_layout
 
@@ -3679,6 +3731,9 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $11.31$
+\end_inset
+
 
 \end_layout
 
@@ -3688,7 +3743,19 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $22.89$
+\end_inset
 
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+10.74
 \end_layout
 
 \end_inset
@@ -3697,6 +3764,9 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $70.71$
+\end_inset
+
 
 \end_layout
 
