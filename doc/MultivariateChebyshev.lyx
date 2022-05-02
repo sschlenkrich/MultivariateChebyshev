@@ -2579,36 +2579,1156 @@ ce perspective.
 \end_layout
 
 \begin_layout Section
-Case Study: Implied Volatility Surface of Heston Model
+Case Study - Implied Volatility Surface of Heston Model
+\end_layout
+
+\begin_layout Standard
+In this section we describe numerical results when applying our Chebyshev
+ implementations to interpolate implied volatilities in a Heston model.
+ The example is chosen because on the one hand side Heston model is a relevant
+ model in practice to price FX and equity options.
+ On the other hand side pricing Vanilla options and calculating implied
+ volatility in Heston model is computationally feasible such that it can
+ be easily be used calibrate also relativelely large Chebyshev tensors.
+\end_layout
+
+\begin_layout Standard
+Implied volatility calculation with Chebyshev polynomials is also analysed
+ in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "GHMP19"
+literal "false"
+
+\end_inset
+
+.
+ This paper focusses on inverting the Black formula via bivariate interpolation.
+ Another related work is 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ZR20"
+literal "false"
+
+\end_inset
+
+.
+ In that paper the authors demonstrate that Chebyshev tensors can also be
+ applied to approximate implied volatility in the more Rough Bergomi model.
+\end_layout
+
+\begin_layout Standard
+Our focus in this section is comparing the computational effort of our implement
+ations using Numpy, TensorFlow and Julia.
+ In order to put the results into the context of the model we give a high-level
+ overview of our Heston model example.
+\end_layout
+
+\begin_layout Paragraph*
+Heston model specification.
+\end_layout
+
+\begin_layout Standard
+Heston model is a model for the price process of a financial asset 
+\begin_inset Formula $S_{t}$
+\end_inset
+
+.
+ The price process 
+\begin_inset Formula $S_{t}$
+\end_inset
+
+ is described by the diffusion
+\begin_inset Formula 
+\[
+\begin{aligned}dS_{t} & =\mu S_{t}dt+\sqrt{v_{t}}S_{t}dW_{t}^{S},\\
+dv_{t} & =\kappa\left(\theta-v_{t}\right)dt+\xi\sqrt{v_{t}}dW_{t}^{v},\\
+dW_{t}^{S}dW_{t}^{v} & =\rho dt,
+\end{aligned}
+\]
+
+\end_inset
+
+with initial conditions 
+\begin_inset Formula $S_{0}>0$
+\end_inset
+
+ and 
+\begin_inset Formula $v_{0}>0$
+\end_inset
+
+ at 
+\begin_inset Formula $t=0$
+\end_inset
+
+ and correlated Brownian motions 
+\begin_inset Formula $W_{t}^{S}$
+\end_inset
+
+ and 
+\begin_inset Formula $W_{t}^{v}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+For option pricing methods in Heston model we refer to the standard literature,
+ see e.g.
+ XYZ.
+ Implied volatilities for a given term (or time to maturity) 
+\begin_inset Formula $T$
+\end_inset
+
+ and strike price 
+\begin_inset Formula $K$
+\end_inset
+
+ are obtained by inverting Black's formula given a forward Vanilla option
+ price derived in Heston model.
+\end_layout
+
+\begin_layout Standard
+For implied volatility modelling we are interested in forward prices.
+ As a consequence, we can disregard the drift 
+\begin_inset Formula $\mu$
+\end_inset
+
+.
+ Implied volatility in Heston model is driven by the parameters of the squared
+ volatility process 
+\begin_inset Formula $v_{t}$
+\end_inset
+
+.
+ In particular, we have the following properties.
 \end_layout
 
 \begin_layout Itemize
-Heston model and model parameters 
+\begin_inset Formula $\sqrt{v_{0}}$
+\end_inset
+
+ controls short term volatility.
 \end_layout
 
 \begin_layout Itemize
-Vanilla option pricing via QuantLib 
+\begin_inset Formula $\sqrt{\theta}$
+\end_inset
+
+ controls long term volatility.
 \end_layout
 
 \begin_layout Itemize
-smile parametrisation 
+\begin_inset Formula $\log(2)/\kappa$
+\end_inset
+
+ represents the half life of the expectation of 
+\begin_inset Formula $v_{t}$
+\end_inset
+
+ moving from 
+\begin_inset Formula $v_{0}$
+\end_inset
+
+ to 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+ This controls the term structure of at-the-money volatilities.
 \end_layout
 
 \begin_layout Itemize
-Chebyshev parametrisation: parameter ranges, degrees, resulting number of
- coefficients 
+\begin_inset Formula $\rho$
+\end_inset
+
+ controls the volatility skew (or volatility slope in strike direction).
 \end_layout
 
 \begin_layout Itemize
-smile and term structure approximation for various parameter scenarios 
+\begin_inset Formula $\xi$
+\end_inset
+
+ controls the volatility smile (or volatility curvature in strike direction).
 \end_layout
 
-\begin_layout Itemize
-(quasi) random sample test(s) 
+\begin_layout Standard
+For our parametrisation of implied volatilities we will use two properties
+ of Heston model.
 \end_layout
 
-\begin_layout Itemize
-limitation: extrapolation
+\begin_layout Paragraph*
+Expectation of squared volatility.
+\end_layout
+
+\begin_layout Standard
+The expectation of the squared volatility 
+\begin_inset Formula $v_{T}$
+\end_inset
+
+ for a given term 
+\begin_inset Formula $T\geq0$
+\end_inset
+
+ is given as
+\begin_inset Formula 
+\[
+\mathbb{E}\left[v_{T}\right]=v_{0}e^{-\kappa T}+\theta\left(1-e^{-\kappa T}\right).
+\]
+
+\end_inset
+
+We use this this property to define an 
+\emph on
+average standard deviation
+\emph default
+ of asset prices as
+\begin_inset Formula 
+\[
+\nu_{(v_{0},\theta,\kappa)}(T)=\sqrt{\left[v_{0}e^{-\kappa T}+\theta\left(1-e^{-\kappa T}\right)\right]T}.
+\]
+
+\end_inset
+
+The average standard deviation is used to normalise option strikes 
+\begin_inset Formula $K$
+\end_inset
+
+.
+ That is, We define the option moneyness as 
+\begin_inset Formula 
+\[
+{\cal M}=\frac{\log\left(K/S_{0}\right)}{\nu_{(v_{0},\theta,\kappa)}(T)}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Feller condition.
+\end_layout
+
+\begin_layout Standard
+The Feller condition for the squared volatility process is 
+\begin_inset Formula 
+\[
+\xi^{2}\leq2\kappa\theta.
+\]
+
+\end_inset
+
+This condition ensures that the squared volatility process remains positive,
+ i.e.
+ 
+\begin_inset Formula $v_{t}>0$
+\end_inset
+
+ for 
+\begin_inset Formula $t>0$
+\end_inset
+
+.
+ Violation of Feller condition e.g.
+ by high vol-of-vol parameter 
+\begin_inset Formula $\xi$
+\end_inset
+
+ is typically accepted to achieve reasonable fits in calibrations.
+ However, high vol-of-vol parameters may cause numerical instabilities.
+\end_layout
+
+\begin_layout Standard
+In order to control (or limit) the extend of Feller condition violation
+ we use a 
+\emph on
+Feller factor
+\emph default
+ parameter to parametrise volatility smile.
+ We define the Feller factor as 
+\begin_inset Formula 
+\[
+{\cal F}=\frac{\xi^{2}}{2\kappa\theta}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Implied volatility function parametrisation.
+\end_layout
+
+\begin_layout Standard
+For a given model or market observation implied volatility 
+\begin_inset Formula $\sigma_{IV}$
+\end_inset
+
+ is a function of the option term 
+\begin_inset Formula $T$
+\end_inset
+
+ and the strike price 
+\begin_inset Formula $K$
+\end_inset
+
+.
+ That is
+\begin_inset Formula 
+\[
+\sigma_{IV}\left(T,K\right)
+\]
+
+\end_inset
+
+also forms a volatility surface.
+\end_layout
+
+\begin_layout Standard
+For this analysis we extend the volatility surface function by the Heston
+ model parameters and apply a parameter transformation.
+ Our target function is 
+\begin_inset Formula $f:{\cal D}\rightarrow R$
+\end_inset
+
+ with 
+\begin_inset Formula ${\cal D}\subset\mathbb{R}^{8}$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\[
+f\left(x\right)=\sigma_{IV}\left(T,K;S_{0},v_{0},\theta,\kappa,\rho,\xi\right).
+\]
+
+\end_inset
+
+The target function argument 
+\begin_inset Formula $x$
+\end_inset
+
+ is specified as 
+\begin_inset Formula 
+\[
+x=\left[\begin{array}{c}
+x_{0}\\
+x_{1}\\
+x_{2}\\
+x_{3}\\
+x_{4}\\
+x_{5}\\
+x_{6}\\
+x_{7}
+\end{array}\right]=\left[\begin{array}{c}
+T\\
+{\cal M}\\
+S_{0}\\
+\sqrt{v_{0}}\\
+\sqrt{\theta/v_{0}}\\
+0.7/\kappa\\
+\rho\\
+{\cal F}
+\end{array}\right].
+\]
+
+\end_inset
+
+The input domain 
+\begin_inset Formula ${\cal D}$
+\end_inset
+
+ is the hyper-rectangle with boundaries as specified in Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Boundaries-of-function-domain"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="9" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Parameter
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Lower boundary
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Upper boundary
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+option term 
+\begin_inset Formula $T$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1/12$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $5.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+moneyness 
+\begin_inset Formula ${\cal M}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-3.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+initial asset price 
+\begin_inset Formula $S_{0}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+initial volatility 
+\begin_inset Formula $\sqrt{v_{0}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.10$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+long volatility ratio
+\begin_inset Formula $\sqrt{\theta/v_{0}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+decay half life 
+\begin_inset Formula $0.7/\kappa$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $5.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+correlation 
+\begin_inset Formula $\rho$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-0.80$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.80$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Feller factor 
+\begin_inset Formula ${\cal F}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.01$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $4.00$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Boundaries-of-function-domain"
+
+\end_inset
+
+Boundaries of function domain 
+\begin_inset Formula ${\cal D}$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Some repesentative volatility smiles of the target function and Chebyshev
+ interpolation using degrees 
+\begin_inset Formula $N_{d}=2$
+\end_inset
+
+ for all 
+\begin_inset Formula $d=1,\ldots,8$
+\end_inset
+
+ are illustrated in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example-implied-volatility"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ In this graph lines represent target function and dots represent Chebyshev
+ interpolation.
+ Note that 
+\begin_inset Formula $N_{d}$
+\end_inset
+
+=2 corresponds to quadratic interpolation in strike direction.
+ We find that quadratic interpolation allows to capture the general shape
+ of the volatility surface.
+ However, there are still considerable differences between Heston model
+ target function and Chebyshev interpolation function.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figs/plot_smiles_figure.png
+	width 70text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Example-implied-volatility"
+
+\end_inset
+
+Example implied volatility smiles of Heston model and Chebyshev interpolation
+ with degrees 
+\begin_inset Formula $N_{d}=2$
+\end_inset
+
+ for all dimensions.
+ Lines represent target function and dots represent Chebyshev interpolation.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Performance Analysis.
+\end_layout
+
+\begin_layout Standard
+We analyse the computational performance of the methods.
+ For this exercise we use the eight-dimensional target function 
+\begin_inset Formula $f$
+\end_inset
+
+ for modelling Heston implied volatilities.We use an equal number of degrees
+ 
+\begin_inset Formula $N=N_{d}$
+\end_inset
+
+ across all dimensions 
+\begin_inset Formula $d=1,\ldots,8$
+\end_inset
+
+ and let 
+\begin_inset Formula $N$
+\end_inset
+
+ run from 
+\begin_inset Formula $1$
+\end_inset
+
+ to 
+\begin_inset Formula $3$
+\end_inset
+
+.
+ As benchmark we consider the Chebyshev coefficient calculation.
+ This routine is implemented in the function 
+\emph on
+chebyshev_coefficients
+\emph default
+ in our example implementations.
+ The computational effort of this rutine is proportional to the square of
+ number of Chebyshev points.
+\end_layout
+
+\begin_layout Standard
+We measure performance as run time on an Intel Core i7-8650U CPU with 1.90GHz,
+ 4 cores and 16 GB RAM.
+ For each 
+\begin_inset Formula $N_{d}$
+\end_inset
+
+ we run calculations five times, exclude minimum and maximum and average
+ the remaining three run times.
+ The results of our numerical experiment are summarised in Table XYZ.
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="5">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Degrees 
+\begin_inset Formula $N_{d}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Target function evaluation
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Numpy
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+TensorFlow
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Julia
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.06$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.006$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.018
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.005
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1.50$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1.20
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.24
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.78
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Run time in seconds of Chebyshev tensor calibration.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard

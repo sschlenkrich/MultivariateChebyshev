@@ -7,6 +7,8 @@ import numpy as np
 from heston_model_pricer import heston_stdev
 from heston_model_pricer import vector_to_params
 
+save_fig = True
+save_fig_file_name = 'plot_smiles_figure.png'
 
 def plot_smiles(terms, moneyness, fwdPrice, initial_vol, long_vol_ratio, decay_half_life, rho, feller_factor,
                 f_model, f_proxy = None):
@@ -41,6 +43,9 @@ def plot_smiles(terms, moneyness, fwdPrice, initial_vol, long_vol_ratio, decay_h
         plt.ylabel('implied volatility')
     plt.title(r'$v_0=%.4f$, $\theta=%.4f$, $\kappa=%0.4f$, $\rho=%.4f$, $\xi=%.4f$' % (v0,theta,kappa,rho,xi))
     plt.legend()
+    #
+    if save_fig:
+        fig.savefig(save_fig_file_name)
 
 
 def get_widgets(terms, label_dict, f_model, f_proxy):
