@@ -320,7 +320,11 @@ Here,
 \begin_inset Formula $d$
 \end_inset
 
--th element of 
+
+\lang british
+-th
+\lang english
+ element of 
 \begin_inset Formula $p\left(x\right)$
 \end_inset
 
@@ -439,7 +443,7 @@ Another critical aspect of multivariate Chebyshev interpolation concerns
 \end_inset
 
 A straight forward implementation of such a nested sum involves an iterator
- along the cartesian product of the indices 
+ along the Cartesian product of the indices 
 \begin_inset Formula 
 \[
 (0,\ldots,N_{1}),(0,\ldots,N_{2}),\ldots,(0,\ldots,N_{D}).
@@ -631,7 +635,7 @@ For a list of vectors
 \begin_inset Formula $d=1,\ldots,D$
 \end_inset
 
-) we define the cartesian product 
+) we define the Cartesian product 
 \begin_inset Formula 
 \[
 V=\text{product}\left(v^{1},\ldots,v^{D}\right)
@@ -666,9 +670,9 @@ In this ordering the elements in the last column change fastest and the
 \end_layout
 
 \begin_layout Standard
-We will apply the cartesian product operation for real vectors as well as
+We will apply the Cartesian product operation for real vectors as well as
  for index vectors.
- In particular, the cartesian product of indices 
+ In particular, the Cartesian product of indices 
 \begin_inset Formula 
 \[
 J=\text{product}\left(\left(1,\ldots,N_{1}\right),\ldots,\left(1,\ldots,N_{D}\right)\right)
@@ -709,7 +713,7 @@ a_{\left(N_{1},N_{2},\ldots,N_{D-1},N_{D}\right)}
 \end_inset
 
 That is, we align the tensor elements with the last axis changing fastest
- and the first axis changing slowest similarly as in the cartesian product
+ and the first axis changing slowest similarly as in the Cartesian product
  specification.
 \end_layout
 
@@ -838,7 +842,10 @@ c_{\left(j_{1},\ldots,j_{D}\right)}=a_{\left(\min\left\{ j_{1},N_{1}\right\} ,\l
 \end_layout
 
 \begin_layout Standard
-Element-wise multiplication with broadcasting is the standard behaviour
+Element-wise multiplication with broadcasting is the standard 
+\lang british
+behaviour
+\lang english
  for multiplication of multi-dimensional arrays in Numpy and TensorFlow.
  In Julia it is implemented by the .* operator.
 \end_layout
@@ -929,9 +936,9 @@ And the elements of
 
  are calculated as 
 \begin_inset Formula 
-\[
-{\cal C}\left(:,i,j\right)=\sum_{k=1}^{N_{D}}{\cal A}\left(:,i,k\right)\;{.*}\;{\cal B}\left(:,k,j\right)
-\]
+\begin{equation}
+{\cal C}\left(:,i,j\right)=\sum_{k=1}^{N_{D}}{\cal A}\left(:,i,k\right)\;{.*}\;{\cal B}\left(:,k,j\right)\label{eq:matmul}
+\end{equation}
 
 \end_inset
 
@@ -1247,7 +1254,7 @@ The tensor
 \begin_inset Formula $c_{\bar{j}}$
 \end_inset
 
- from rquation (
+ from equation (
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:Chebyshev-coefficients"
@@ -1781,7 +1788,7 @@ The proposed algorithm still suffers from the exponential growth in the
 \begin_inset Formula $D/2$
 \end_inset
 
- compared to a standard implementation via cartesian product.
+ compared to a standard implementation via Cartesian product.
 \end_layout
 
 \begin_layout Paragraph*
@@ -1853,7 +1860,7 @@ noprefix "false"
 \end_inset
 
 .
- The multivariate Chebyshev points are collected as cartesian product in
+ The multivariate Chebyshev points are collected as Cartesian product in
  the matrix 
 \begin_inset Formula ${\cal Q}$
 \end_inset
@@ -1902,7 +1909,7 @@ The weighs of the
 
 \end_inset
 
-Similarly, we calcute the vector of coefficient weights 
+Similarly, we calculate the vector of coefficient weights 
 \begin_inset Formula 
 \begin{equation}
 \left[v_{\bar{j}}\right]_{\bar{j}\in J}=\left[\prod_{d=1}^{D}\frac{2^{\mathbbm{1}_{0<j_{d}<N_{d}}}}{N_{d}}\right]_{\bar{j}\in J}.\label{eq:coefficient-weights}
@@ -2408,7 +2415,7 @@ Chebyshev coefficient calibration.
 \end_layout
 
 \begin_layout Standard
-The key drivers of compuatational effort for algorithm 
+The key drivers of computational effort for algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-coefficient-calibration"
@@ -2482,7 +2489,7 @@ noprefix "false"
 
 \end_inset
 
- demontrate how calculations can be delegated to a few calls of generalised
+ demonstrate how calculations can be delegated to a few calls of generalised
  matrix multiplications.
  This allows exploiting efficient BLAS implementations and parallelisation.
 \end_layout
@@ -2526,10 +2533,10 @@ github.com/sschlenkrich/MultivariateChebyshev
 .
  We choose Numpy and TensorFlow as packages for high-level linear algebra
  operations.
- Both packages are available in the Python programing language.
- Moreover, we implement the algorithms in the Julia programing language.
+ Both packages are available in the Python programming language.
+ Moreover, we implement the algorithms in the Julia programming language.
  Julia is designed as high-level high-performance language.
- If nedded, Julia can also be accessed from Python.
+ If needed, Julia can also be accessed from Python.
  A comparison of the implementations in 
 \family typewriter
 
@@ -2588,8 +2595,9 @@ In this section we describe numerical results when applying our Chebyshev
  The example is chosen because on the one hand side Heston model is a relevant
  model in practice to price FX and equity options.
  On the other hand side pricing Vanilla options and calculating implied
- volatility in Heston model is computationally feasible such that it can
- be easily be used calibrate also relativelely large Chebyshev tensors.
+ volatility in Heston model is computationally feasible such that the resulting
+ target function can easily be used to calibrate relatively large Chebyshev
+ tensors.
 \end_layout
 
 \begin_layout Standard
@@ -2603,7 +2611,7 @@ literal "false"
 \end_inset
 
 .
- This paper focusses on inverting the Black formula via bivariate interpolation.
+ This paper focuses on inverting the Black formula via bivariate interpolation.
  Another related work is 
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -3347,7 +3355,7 @@ Boundaries of function domain
 \end_layout
 
 \begin_layout Standard
-Some repesentative volatility smiles of the target function and Chebyshev
+Some representative volatility smiles of the target function and Chebyshev
  interpolation using degrees 
 \begin_inset Formula $N_{d}=2$
 \end_inset
@@ -3464,20 +3472,32 @@ We analyse the computational performance of the methods.
 chebyshev_coefficients
 \emph default
  in our example implementations.
- The computational effort of this rutine is proportional to the square of
- number of Chebyshev points.
+ The computational effort of this routine is proportional to the square
+ of number of Chebyshev points.
 \end_layout
 
 \begin_layout Standard
-We measure performance as run time on an Intel Core i7-8650U CPU with 1.90GHz,
- 4 cores and 16 GB RAM.
+Computational performance is measured as run time on an Intel Core i7-8650U
+ CPU with 1.90GHz, 4 cores and 16 GB RAM.
+ Programming environment is Python 3.7 with Numpy 1.21.5, TensorFlow 2.7.0 and
+ Julia 1.7.2.
  For each 
 \begin_inset Formula $N_{d}$
 \end_inset
 
  we run calculations five times, exclude minimum and maximum and average
  the remaining three run times.
- The results of our numerical experiment are summarised in Table XYZ.
+ The results of our numerical experiment are summarised in Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Run-time-of-Chebyshev-tensor-calibation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
 \begin_inset Float table
 wide false
 sideways false
@@ -3486,8 +3506,9 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Tabular
-<lyxtabular version="3" rows="4" columns="5">
+<lyxtabular version="3" rows="4" columns="6">
 <features tabularvalignment="middle">
+<column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
@@ -3503,6 +3524,15 @@ Degrees
 \end_inset
 
 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# Chebyshev points
 \end_layout
 
 \end_inset
@@ -3561,7 +3591,7 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $0.06$
+\begin_inset Formula $2^{8}=256$
 \end_inset
 
 
@@ -3573,7 +3603,7 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $0.006$
+\begin_inset Formula $0.0478$
 \end_inset
 
 
@@ -3585,7 +3615,22 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-0.018
+\begin_inset Formula $0.0020$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.0130$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3594,7 +3639,10 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-0.005
+\begin_inset Formula $0.0064$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3617,7 +3665,7 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $1.50$
+\begin_inset Formula $3^{8}=6,561$
 \end_inset
 
 
@@ -3629,7 +3677,10 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-1.20
+\begin_inset Formula $1.07$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3638,7 +3689,22 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-0.24
+\begin_inset Formula $0.32$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.19$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3647,7 +3713,10 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
-0.78
+\begin_inset Formula $0.58$
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -3670,6 +3739,9 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $4^{8}=65,536$
+\end_inset
+
 
 \end_layout
 
@@ -3679,6 +3751,9 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $11.35$
+\end_inset
+
 
 \end_layout
 
@@ -3688,6 +3763,21 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $23.94$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $12.50$
+\end_inset
+
 
 \end_layout
 
@@ -3697,6 +3787,9 @@ Julia
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $70.54$
+\end_inset
+
 
 \end_layout
 
@@ -3714,6 +3807,12 @@ Julia
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Run-time-of-Chebyshev-tensor-calibation"
+
+\end_inset
+
 Run time in seconds of Chebyshev tensor calibration.
 \end_layout
 
@@ -3722,13 +3821,104 @@ Run time in seconds of Chebyshev tensor calibration.
 
 \end_layout
 
-\begin_layout Plain Layout
-
-\end_layout
-
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+We find from the results in Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Run-time-of-Chebyshev-tensor-calibation"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ that the computational effort for Chebyshev coefficient calculation is
+ proportional to the square of the number of Chebyshev points.
+ The number of Chebyshev points itself for this example is proportional
+ to the polynomial degree to the power of eight.
+ This behaviour is expected and illustrates the impact of the curse of dimension
+ality for classical multivariate Chebyshev interpolation.
+\end_layout
+
+\begin_layout Standard
+When comparing Numpy with TensorFlow we see that for small number of Chebyshev
+ points Numpy outperforms TensorFlow whereas for larger number of Chebyshev
+ points Numpy requires about twice the run time of TensorFlow.
+ The observation for small number of Chebyshev points can be explained by
+ TensorFlow's overhead for computational graph construction.
+ For larger number of Chebyshev points TensorFlow outperforms Numpy because
+ TensorFlow parallelises via multithreading whereas Numpy runs single-threaded.
+\end_layout
+
+\begin_layout Standard
+The comparison of Numpy and Julia shows that Julia (without multithreading)
+ requires about twice the run time of Numpy.
+ We attribute this difference to the fact that Julia does not provide a
+ standard generalised matrix multiplication function.
+ Instead we implemented the 
+\emph on
+matmul
+\emph default
+ function according to equation (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:matmul"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+ Our 
+\emph on
+matmul
+\emph default
+ implementation still uses broadcasting and delegates to BLAS routines.
+ However, memory access management might not be as efficient as in Numpy's
+ 
+\emph on
+matmul
+\emph default
+ implementation.
+\end_layout
+
+\begin_layout Section
+Conclusions
+\end_layout
+
+\begin_layout Standard
+Multivariate Chebyshev interpolation is a powerful tool for approximating
+ functions of low and medium number of input variables.
+ The method attracted some attention for finance applications in recent
+ years.
+\end_layout
+
+\begin_layout Standard
+With this work we demonstrated how multivariate Chebyshev interpolation
+ can be implemented efficiently using high-level linear algebra operations.
+ This does not circumvent the course of dimensionality of the method.
+ But it allows us to utilise efficient BLAS implementations and parallelisation
+ of general purpose linear algebra packages.
+\end_layout
+
+\begin_layout Standard
+Our numerical results show that TensorFlow's internal ability to parallelise
+ calculations can easily be utilised efficiently for multivariate Chebyshev
+ interpolation.
+ With the given setup TensorFlow outperforms Numpy and Julia for larger
+ number of Chebyshev points.
+\end_layout
+
+\begin_layout Standard
+Future research might focus on embedding multivariate Chebyshev interpolation
+ for suitable sub-tasks in larger neural networks constructed with TensorFlow.
 \end_layout
 
 \begin_layout Standard
