@@ -100,11 +100,23 @@ Sebastian Schlenkrich
 \end_layout
 
 \begin_layout Date
-Mai 2022
+May 2022
 \end_layout
 
 \begin_layout Abstract
-In this paper...
+In this paper we analyse multivariate Chebyshev interpolation for function
+ approximation.
+ We propose an algorithm for Chebyshev coefficient calibration and function
+ interpolation that utilises high-level linear algebra operations.
+ Such operations allow deferring large portions of the calculation to optimised
+ BLAS routines and to apply parallelisation.
+ We implement and test our algorithm using Numpy, TensorFlow and Julia language
+ and apply Chebyshev interpolation to Heston model implied volatility surface
+ approximation.
+ As a result we find that TensorFlows's internal parallelisation methodology
+ proves advantegous for medium and and large size interpolation problems.
+ This result motivates using Chebyshev interpolation as component in larger
+ TensorFlow-based approximation models.
 \end_layout
 
 \begin_layout Section
@@ -670,8 +682,8 @@ In this ordering the elements in the last column change fastest and the
 \end_layout
 
 \begin_layout Standard
-We will apply the Cartesian product operation for real vectors as well as
- for index vectors.
+We apply the Cartesian product operation to real (i.e.
+ float) vectors as well as to index vectors.
  In particular, the Cartesian product of indices 
 \begin_inset Formula 
 \[
@@ -1047,11 +1059,11 @@ It turns out that the mode-
 
 \end_inset
 
-We will use this observation to formulate Chebyshev interpolation as a sequence
+We use this observation to formulate Chebyshev interpolation as a sequence
  of high-level 
-\begin_inset Formula $\text{matmul}\left(\cdot\right)$
-\end_inset
-
+\emph on
+matmul
+\emph default
  operations where we can rely on efficient low-level implementations.
 \end_layout
 
@@ -1080,7 +1092,6 @@ The coefficients
 \begin_inset Formula ${\cal A}$
 \end_inset
 
-.
  of shape 
 \begin_inset Formula $\left(N_{1}+1,\ldots,N_{D}+1\right)$
 \end_inset
@@ -1114,7 +1125,7 @@ With this notation the nested sum becomes a sequence of modal products
 
 \end_inset
 
-where the order 
+where the order-
 \begin_inset Formula $D$
 \end_inset
 
@@ -1122,7 +1133,7 @@ where the order
 \begin_inset Formula ${\cal C}$
 \end_inset
 
- with shape 
+ with trivial shape 
 \begin_inset Formula $\left(1,\ldots,1\right)$
 \end_inset
 
@@ -1201,7 +1212,7 @@ noprefix "false"
 \end_inset
 
  (without subscript) the batch size for evaluation.
- In order to utilize BLAS routines and parallelisation we want to avoid
+ In order to utilise BLAS routines and parallelisation we want to avoid
  manual iteration over the elements of a batch.
  Instead, we carefully use broadcasting to vectorise calculations.
 \end_layout
@@ -1249,8 +1260,12 @@ The tensor
 \begin_inset Formula $\left(N_{1}+1,\ldots,N_{D}+1\right)$
 \end_inset
 
- and for the usage of interpolation consists of the Chebyshev coefficients
- 
+.
+ For the usage of interpolation 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+ consists of the Chebyshev coefficients 
 \begin_inset Formula $c_{\bar{j}}$
 \end_inset
 
@@ -1304,7 +1319,7 @@ for
 \end_layout
 
 \begin_layout Standard
-With algorithm 
+Finally, we propose Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-batch-calculation"
@@ -1314,7 +1329,7 @@ noprefix "false"
 
 \end_inset
 
- we calculate a vector 
+ to calculate a vector 
 \begin_inset Formula 
 \[
 {\cal R}=\left[f\left(x^{1}\right),\ldots,f\left(x^{N}\right)\right]^{\top}.
@@ -1322,7 +1337,11 @@ noprefix "false"
 
 \end_inset
 
+The vector 
+\begin_inset Formula ${\cal R}$
+\end_inset
 
+ then holds the results of the Chebyshev batch calculation.
 \end_layout
 
 \begin_layout Standard
@@ -1720,7 +1739,7 @@ Chebyshev batch calculation.
 
 \begin_layout Standard
 We assess the computational effort of the Chebyshev batch calculation in
- algorithm 
+ Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-batch-calculation"
@@ -1826,8 +1845,8 @@ for
 
 \end_inset
 
- We will demonstrate how this calculation can be related to the Chebyshev
- batch calculation from algorithm 
+ We demonstrate how this calculation can be related to the Chebyshev batch
+ calculation from Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-batch-calculation"
@@ -1865,7 +1884,7 @@ noprefix "false"
 \begin_inset Formula ${\cal Q}$
 \end_inset
 
-of shape 
+ of shape 
 \begin_inset Formula $\left(\prod_{d=1}^{D}\left(N_{d}+1\right),D\right)$
 \end_inset
 
@@ -1885,8 +1904,8 @@ For each row
 \begin_inset Formula $Q$
 \end_inset
 
- we calculate the target function value vector 
-\begin_inset Formula $\left[y_{\bar{k}}\right]_{\bar{k}\in J}$
+ we calculate the target function value 
+\begin_inset Formula $y_{\bar{k}}$
 \end_inset
 
  such that
@@ -1917,7 +1936,7 @@ Similarly, we calculate the vector of coefficient weights
 
 \end_inset
 
-We note that calculation of the weight vectors 
+We note that calculations of the weight vectors 
 \begin_inset Formula $\left[w_{\bar{k}}\right]_{\bar{k}\in J}$
 \end_inset
 
@@ -1925,8 +1944,8 @@ We note that calculation of the weight vectors
 \begin_inset Formula $\left[v_{\bar{j}}\right]_{\bar{j}\in J}$
 \end_inset
 
- typically can also be vectorisied and do not require manual iteration over
- the index 
+ can also be vectorisied and do not require manual iteration over the index
+ 
 \begin_inset Formula $\bar{k}$
 \end_inset
 
@@ -2042,7 +2061,7 @@ noprefix "false"
 \end_layout
 
 \begin_layout Standard
-We summarise the Chebyshev coefficient calibration in algorithm 
+We summarise the Chebyshev coefficient calibration in Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-coefficient-calibration"
@@ -2415,7 +2434,7 @@ Chebyshev coefficient calibration.
 \end_layout
 
 \begin_layout Standard
-The key drivers of computational effort for algorithm 
+The key drivers of computational effort for Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-coefficient-calibration"
@@ -2425,7 +2444,7 @@ noprefix "false"
 
 \end_inset
 
- lie in the function evaluation in step 3 and in the call of algorithm 
+ lie in the function evaluation in step 3 and in the call of Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-batch-calculation"
@@ -2441,7 +2460,7 @@ noprefix "false"
 \end_inset
 
  evaluations of the target function.
- In step 6 we call algorithm 
+ In step 6 we call Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-batch-calculation"
@@ -2459,7 +2478,7 @@ noprefix "false"
  Consequently, we end up with
 \begin_inset Formula 
 \[
-\prod_{d=1}^{D}\left(N_{d}+1\right)\,\sum_{d-1}^{D}\,\prod_{j=1}^{d}\left(N_{j}+1\right)\sim\prod_{d=1}^{D}\left(N_{d}+1\right)^{2}
+\prod_{d=1}^{D}\left(N_{d}+1\right)\,\sum_{d-1}^{D}\,\prod_{j=1}^{d}\left(N_{j}+1\right)\approx\prod_{d=1}^{D}\left(N_{d}+1\right)^{2}
 \]
 
 \end_inset
@@ -2469,7 +2488,7 @@ operations.
 \end_layout
 
 \begin_layout Standard
-Besides the intrinsic computational effort, algorithm
+Besides the intrinsic computational effort, Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-batch-calculation"
@@ -2479,7 +2498,7 @@ noprefix "false"
 
 \end_inset
 
- and algorithm 
+ and Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-coefficient-calibration"
@@ -2499,7 +2518,7 @@ Implementation.
 \end_layout
 
 \begin_layout Standard
-Implementations of algorithm
+Implementations of Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-batch-calculation"
@@ -2509,7 +2528,7 @@ noprefix "false"
 
 \end_inset
 
- and algorithm 
+ and Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-coefficient-calibration"
@@ -2622,7 +2641,8 @@ literal "false"
 
 .
  In that paper the authors demonstrate that Chebyshev tensors can also be
- applied to approximate implied volatility in the more Rough Bergomi model.
+ applied to approximate implied volatility in the more complex Rough Bergomi
+ model.
 \end_layout
 
 \begin_layout Standard
@@ -2681,9 +2701,33 @@ with initial conditions
 \end_layout
 
 \begin_layout Standard
-For option pricing methods in Heston model we refer to the standard literature,
- see e.g.
- XYZ.
+For option pricing methods in Heston model we refer to the standard literature.
+ Our implementation for testing utilises QuantLib 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "AB22"
+literal "false"
+
+\end_inset
+
+, which uses Fourier integration, see 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Spa20"
+literal "false"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "Sec. 8.4"
+key "AP10"
+literal "false"
+
+\end_inset
+
+.
  Implied volatilities for a given term (or time to maturity) 
 \begin_inset Formula $T$
 \end_inset
@@ -2709,7 +2753,7 @@ For implied volatility modelling we are interested in forward prices.
 \end_inset
 
 .
- In particular, we have the following properties.
+ In particular, we have the following properties:
 \end_layout
 
 \begin_layout Itemize
@@ -2870,7 +2914,7 @@ Implied volatility function parametrisation.
 \end_layout
 
 \begin_layout Standard
-For a given model or market observation implied volatility 
+For a given model or market observation, implied volatility 
 \begin_inset Formula $\sigma_{IV}$
 \end_inset
 
@@ -2883,7 +2927,7 @@ For a given model or market observation implied volatility
 \end_inset
 
 .
- That is
+ Typically
 \begin_inset Formula 
 \[
 \sigma_{IV}\left(T,K\right)
@@ -2891,7 +2935,7 @@ For a given model or market observation implied volatility
 
 \end_inset
 
-also forms a volatility surface.
+is viewed as a volatility surface.
 \end_layout
 
 \begin_layout Standard
@@ -2908,7 +2952,7 @@ For this analysis we extend the volatility surface function by the Heston
  such that
 \begin_inset Formula 
 \[
-f\left(x\right)=\sigma_{IV}\left(T,K;S_{0},v_{0},\theta,\kappa,\rho,\xi\right).
+y\left(x\right)=\sigma_{IV}\left(T,K;S_{0},v_{0},\theta,\kappa,\rho,\xi\right).
 \]
 
 \end_inset
@@ -3381,7 +3425,7 @@ noprefix "false"
 \begin_inset Formula $N_{d}$
 \end_inset
 
-=2 corresponds to quadratic interpolation in strike direction.
+=2 corresponds to quadratic interpolation in moneyness direction.
  We find that quadratic interpolation allows to capture the general shape
  of the volatility surface.
  However, there are still considerable differences between Heston model
@@ -3441,11 +3485,11 @@ Performance Analysis.
 \begin_layout Standard
 We analyse the computational performance of the methods.
  For this exercise we use the eight-dimensional target function 
-\begin_inset Formula $f$
+\begin_inset Formula $y$
 \end_inset
 
- for modelling Heston implied volatilities.We use an equal number of degrees
- 
+ for modelling Heston implied volatilities.
+ We use an equal number of degrees 
 \begin_inset Formula $N=N_{d}$
 \end_inset
 
@@ -3466,7 +3510,8 @@ We analyse the computational performance of the methods.
 \end_inset
 
 .
- As benchmark we consider the Chebyshev coefficient calculation.
+ As performance benchmark routine we consider the Chebyshev coefficient
+ calculation.
  This routine is implemented in the function 
 \emph on
 chebyshev_coefficients
