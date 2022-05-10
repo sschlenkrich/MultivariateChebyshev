@@ -123,7 +123,7 @@ def vector_to_params(x):
     """
     Transform normalised input to original parameters
     """
-    assert x.shape == (8,)
+    # assert x.shape == (8,)
     term     = x[0]
     fwdPrice = x[2]
     v0       = x[3]**2
