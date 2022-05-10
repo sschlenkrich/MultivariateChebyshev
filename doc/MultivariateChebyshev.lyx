@@ -160,6 +160,16 @@ literal "false"
 \end_inset
 
 .
+ Another relevant contribution in that field is the MoCaX library which
+ is discussed in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "RZ21"
+literal "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -174,10 +184,11 @@ curse of dimensionality
  There are various approaches to circumvent the exponential growth in computatio
 nal effort.
  As an example, we mention tensor trains which are recently proposed for
- function approximation in 
+ function approximation e.g.
+ in 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "AP21"
+key "GKS19,AP21,RZ21"
 literal "false"
 
 \end_inset
@@ -2047,7 +2058,7 @@ noprefix "false"
 \end_inset
 
 .
- Thus, we can re-use algorithm 
+ Thus, we can re-use Algorithm 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "alg:Chebyshev-batch-calculation"
@@ -2289,7 +2300,7 @@ right)$
 
 \begin_layout Plain Layout
 
-Call algorithm 
+Call Algorithm 
 \backslash
 ref{alg:Chebyshev-batch-calculation} with inputs ${
 \backslash
@@ -2511,6 +2522,30 @@ noprefix "false"
  demonstrate how calculations can be delegated to a few calls of generalised
  matrix multiplications.
  This allows exploiting efficient BLAS implementations and parallelisation.
+\end_layout
+
+\begin_layout Standard
+The calculation of the Chebyshev coefficient tensor 
+\begin_inset Formula ${\cal C}$
+\end_inset
+
+ can also be avoided altogether.
+ This is achieved by implementing multivariate Chebyshev interpolation as
+ recursive one-dimensional interpolations.
+ The approach is proposed in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "RZ21"
+literal "false"
+
+\end_inset
+
+ and implemented in the MoCaX library.
+ Re-using efficient one-dimensional Chebyshev implementation and avoiding
+ the Chebyshev coefficients is a clear advantage compared to the algorithms
+ proposed in this paper.
+ However, the advantage comes at the cost of higher computational effort
+ for Chebyshev interpolation evaluation if the polynomial degree is high.
 \end_layout
 
 \begin_layout Paragraph*
