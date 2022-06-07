@@ -92,7 +92,7 @@ PackageOptions algorithm2e "linesnumbered,lined,boxed,commentsnumbered"
 \begin_body
 
 \begin_layout Title
-Multivariate Chebyshev Interpolation Using High-level Linear Algebra Operations
+Implementing Multivariate Chebyshev Interpolation
 \end_layout
 
 \begin_layout Author
@@ -100,7 +100,7 @@ Sebastian Schlenkrich
 \end_layout
 
 \begin_layout Date
-May 2022
+June 2022
 \end_layout
 
 \begin_layout Abstract
@@ -113,8 +113,8 @@ In this paper we analyse multivariate Chebyshev interpolation for function
  We implement and test our algorithm using Numpy, TensorFlow and Julia language
  and apply Chebyshev interpolation to Heston model implied volatility surface
  approximation.
- As a result we find that TensorFlows's internal parallelisation methodology
- proves advantegous for medium and and large size interpolation problems.
+ As a result we find that TensorFlow's internal parallelisation methodology
+ proves advantageous for medium and and large size interpolation problems.
  This result motivates using Chebyshev interpolation as component in larger
  TensorFlow-based approximation models.
 \end_layout
@@ -202,8 +202,8 @@ With this work we do not aim at lifting the curse of dimensionality.
  operations can be used to implement multivariate Chebyshev interpolation
  efficiently given its intrinsic constraints.
  The high-level linear algebra operations itself are typically implemented
- as efficiently as possible by delegating calculations to BLAS routines
- 
+ as efficiently as possible by delegating calculations to Basic Linear Algebra
+ Subsystem (BLAS) routines 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Bla02"
@@ -215,7 +215,7 @@ literal "false"
 \end_layout
 
 \begin_layout Standard
-Chebyshev interpolation is specified on the 
+Multivariate Chebyshev interpolation is specified on the 
 \begin_inset Formula $D$
 \end_inset
 
@@ -224,55 +224,84 @@ Chebyshev interpolation is specified on the
 \end_inset
 
 .
- We denote 
-\begin_inset Formula $p=\left(p_{1},\ldots,p_{D}\right)$
-\end_inset
-
- the elements of that standardised domain 
-\begin_inset Formula $\left[-1,1\right]^{D}$
+ Original model inputs are assumed to be defined on a general hyper-rectangular
+ domain 
+\begin_inset Formula $\Omega$
 \end_inset
 
 .
- Original model inputs 
-\begin_inset Formula $x$
-\end_inset
-
- are assumed to be defined on a general hyper-rectangular domain.
  Such general domain is transformed into the standardised domain via an
  element-wise affine transformation.
-\end_layout
+ We use 
+\begin_inset Formula $p$
+\end_inset
 
-\begin_layout Standard
-We use the notation 
-\begin_inset Formula $p\left(x\right)$
+ to denote elements from the standardised domain 
+\begin_inset Formula $\left[-1,1\right]^{D}$
 \end_inset
 
  and 
-\begin_inset Formula $x\left(p\right)$
+\begin_inset Formula $x$
 \end_inset
 
- to describe the affine transformation from the general input domain to
- the standardised domain and vice versa.
+ to denote elements from the general hyper-rectangular domain 
+\begin_inset Formula $\Omega$
+\end_inset
+
+.
+ The element-wise affine transformation from 
+\begin_inset Formula $\Omega$
+\end_inset
+
+ to 
+\begin_inset Formula $\left[-1,1\right]^{D}$
+\end_inset
+
+ is denoted as
+\begin_inset Formula 
+\[
+\pi:\Omega\rightarrow\left[-1,1\right]^{D}.
+\]
+
+\end_inset
+
+Correspondingly, the affine transformation from 
+\begin_inset Formula $\left[-1,1\right]^{D}$
+\end_inset
+
+ to 
+\begin_inset Formula $\Omega$
+\end_inset
+
+ is
+\begin_inset Formula 
+\[
+\pi^{-1}:\left[-1,1\right]^{D}\rightarrow\Omega.
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-For a scalar parameter 
-\begin_inset Formula $p_{d}\in\left[-1,1\right]$
-\end_inset
-
- the Chebyshev polynomial of degree 
+The Chebyshev polynomial of degree 
 \begin_inset Formula $j$
 \end_inset
 
  is denoted 
-\begin_inset Formula $T_{j}\left(p_{d}\right)$
+\begin_inset Formula $T_{j}:\left[-1,1\right]\rightarrow\left[-1,1\right]$
 \end_inset
 
 .
- The Chebyshev polynomial is defined via 
+ For a scalar input 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, the Chebyshev polynomial is defined via 
 \begin_inset Formula 
 \begin{equation}
-T_{j}\left(p_{d}\right)=\cos\left(j\arccos\left(p_{d}\right)\right).\label{eq:Chebyshev-polynomial}
+T_{j}\left(\alpha\right)=\cos\left(j\arccos\left(\alpha\right)\right).\label{eq:Chebyshev-polynomial}
 \end{equation}
 
 \end_inset
@@ -280,9 +309,9 @@ T_{j}\left(p_{d}\right)=\cos\left(j\arccos\left(p_{d}\right)\right).\label{eq:Ch
 An equivalent representation is given via the recursion 
 \begin_inset Formula 
 \[
-\begin{aligned}T_{0}\left(p_{d}\right) & =1,\\
-T_{1}\left(p_{d}\right) & =p_{d},\\
-T_{j}\left(p_{d}\right) & =2p_{d}T_{j-1}\left(p_{d}\right)-T_{j-2}\left(p_{d}\right).
+\begin{aligned}T_{0}\left(\alpha\right) & =1,\\
+T_{1}\left(\alpha\right) & =p_{d},\\
+T_{j}\left(\alpha\right) & =2\alpha T_{j-1}\left(\alpha\right)-T_{j-2}\left(\alpha\right).
 \end{aligned}
 \]
 
@@ -299,7 +328,7 @@ Multivariate Chebyshev polynomials are defined as products of one-dimensional
 \end_inset
 
  be a multi-index and 
-\begin_inset Formula $p\in\left[-1,1\right]^{D}$
+\begin_inset Formula $p=\left(p_{1},\ldots,p_{D}\right)\in\left[-1,1\right]^{D}$
 \end_inset
 
 .
@@ -310,7 +339,7 @@ Multivariate Chebyshev polynomials are defined as products of one-dimensional
  is 
 \begin_inset Formula 
 \[
-T_{\bar{j}}\left(p\right)=\prod_{d=1}^{D}T_{j_{d}}\left(p_{d}\right).
+\bar{T}_{\bar{j}}\left(p\right)=\prod_{d=1}^{D}T_{j_{d}}\left(p_{d}\right).
 \]
 
 \end_inset
@@ -319,18 +348,40 @@ T_{\bar{j}}\left(p\right)=\prod_{d=1}^{D}T_{j_{d}}\left(p_{d}\right).
 \end_layout
 
 \begin_layout Standard
-Tensor based Chebyshev interpolation of a target function 
-\begin_inset Formula $y(x)$
+Tensor based Chebyshev interpolation is the unique multivariate interpolation
+ of a target function 
+\begin_inset Formula $f:\Omega\rightarrow\mathbb{R}$
 \end_inset
 
- for (multi-index) degree 
+ using a regular grid of Chebyshev points as interpolation nodes and multivariat
+e Chebyshev polynomials as basis functions.
+ Our specification follows 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "Def. 4"
+key "Poe20"
+literal "false"
+
+\end_inset
+
+.
+ Let 
 \begin_inset Formula $\bar{N}=\left(N_{1},\ldots,N_{D}\right)$
 \end_inset
 
- is given by 
+ be a multi-index.
+ The tensor based Chebyshev interpolation polynomial of degree 
+\begin_inset Formula $\bar{N}$
+\end_inset
+
+ is 
+\begin_inset Formula ${\cal I}_{\bar{N}}:\Omega\rightarrow\mathbb{R}$
+\end_inset
+
+ with 
 \begin_inset Formula 
 \begin{equation}
-f(x)=\sum_{0\leq\bar{j}\leq\bar{N}}c_{\bar{j}}T_{\bar{j}}\left(p\left(x\right)\right)=\sum_{j_{1}=0}^{N_{1}}\cdots\sum_{j_{D}=0}^{N_{D}}c_{\left(j_{1},\ldots,j_{D}\right)}\prod_{d=1}^{D}T_{j_{d}}\left(p_{d}\right).\label{eq:Chebyshev-interpolation}
+{\cal I}_{\bar{N}}(x)=\sum_{0\leq\bar{j}\leq\bar{N}}c_{\bar{j}}\bar{T}_{\bar{j}}\left(\pi\left(x\right)\right)=\sum_{j_{1}=0}^{N_{1}}\cdots\sum_{j_{D}=0}^{N_{D}}c_{\left(j_{1},\ldots,j_{D}\right)}\prod_{d=1}^{D}T_{j_{d}}\left(p_{d}\right).\label{eq:Chebyshev-interpolation}
 \end{equation}
 
 \end_inset
@@ -343,15 +394,20 @@ Here,
 \begin_inset Formula $d$
 \end_inset
 
-
-\lang british
--th
-\lang english
- element of 
-\begin_inset Formula $p\left(x\right)$
+-th element of 
+\begin_inset Formula $\pi\left(x\right)$
 \end_inset
 
 .
+ The specification of the coefficients 
+\begin_inset Formula $c_{\bar{j}}=c_{\left(j_{1},\ldots,j_{D}\right)}$
+\end_inset
+
+ for 
+\begin_inset Formula $0\leq\bar{j}\leq\bar{N}$
+\end_inset
+
+ is elaborated below.
 \end_layout
 
 \begin_layout Standard
@@ -361,10 +417,15 @@ In order to calculate the coefficients
 
  we introduce the multivariate Chebyshev points (of second kind).
  We consider a multi-index 
-\begin_inset Formula $\bar{k}$
+\begin_inset Formula $\bar{k}=\left(k_{1},\ldots,k_{D}\right)$
 \end_inset
 
- and set 
+ with 
+\begin_inset Formula $0\leq\bar{k}\leq\bar{N}$
+\end_inset
+
+.
+ And set 
 \begin_inset Formula 
 \[
 q_{\bar{k}}=\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\in\left[-1,1\right]^{D}
@@ -380,19 +441,20 @@ q_{k_{d}}^{d}=\cos\left(\pi\frac{k_{d}}{N_{d}}\right),\;0\leq k_{d}\leq N_{d},\;
 
 \end_inset
 
-The mapping 
+The multivariate Chebyshev points are transformed to the general domain
+ 
+\begin_inset Formula $\Omega$
+\end_inset
+
+ of the target function via
 \begin_inset Formula 
 \[
-x_{\bar{k}}=x\left(q_{\bar{k}}\right)=x\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)=\left[x\left(q_{k_{1}}^{1}\right),\ldots,x\left(q_{k_{D}}^{D}\right)\right]
+\pi^{-1}\left(q_{\bar{k}}\right)=\pi^{-1}\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right).
 \]
 
 \end_inset
 
-defines the affine mapping from the standardised domain 
-\begin_inset Formula $\left[-1,1\right]^{D}$
-\end_inset
 
- to the domain of the target function.
 \end_layout
 
 \begin_layout Standard
@@ -403,7 +465,7 @@ The coefficients
  are given as 
 \begin_inset Formula 
 \begin{equation}
-c_{\bar{j}}=\left(\prod_{d=1}^{D}\frac{2^{\mathbbm{1}_{0<j_{d}<N_{d}}}}{N_{d}}\right)\sum_{k_{1}=0}^{N_{1}}\text{´´}\cdots\sum_{k_{D}=0}^{N_{D}}\text{´´}y\left(x\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\right)\prod_{d=1}^{D}T_{j_{d}}\left(q_{k_{d}}^{d}\right).\label{eq:Chebyshev-coefficients}
+c_{\bar{j}}=\left(\prod_{d=1}^{D}\frac{2^{\mathbbm{1}_{0<j_{d}<N_{d}}}}{N_{d}}\right)\sum_{k_{1}=0}^{N_{1}}\text{´´}\cdots\sum_{k_{D}=0}^{N_{D}}\text{´´}f\left(\pi^{-1}\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\right)\prod_{d=1}^{D}T_{j_{d}}\left(q_{k_{d}}^{d}\right).\label{eq:Chebyshev-coefficients}
 \end{equation}
 
 \end_inset
@@ -427,7 +489,7 @@ A first critical aspect of multivariate Chebyshev interpolation is that
 \end_inset
 
  evaluations 
-\begin_inset Formula $y\left(x\left(q_{\bar{k}}\right)\right)$
+\begin_inset Formula $f\left(\pi^{-1}\left(q_{\bar{k}}\right)\right)$
 \end_inset
 
  of the target function at the Chebyshev points 
@@ -436,10 +498,7 @@ A first critical aspect of multivariate Chebyshev interpolation is that
 
 .
  For larger dimensions (e.g.
-\begin_inset space ~
-\end_inset
-
-
+ 
 \begin_inset Formula $D>3$
 \end_inset
 
@@ -469,7 +528,7 @@ A straight forward implementation of such a nested sum involves an iterator
  along the Cartesian product of the indices 
 \begin_inset Formula 
 \[
-(0,\ldots,N_{1}),(0,\ldots,N_{2}),\ldots,(0,\ldots,N_{D}).
+(0,1,\ldots,N_{1}),(0,1,\ldots,N_{2}),\ldots,(0,1,\ldots,N_{D}).
 \]
 
 \end_inset
@@ -566,7 +625,11 @@ mode
 \end_inset
 
  we have an index range 
-\begin_inset Formula $j_{d}=1,\ldots,N_{d}$
+\begin_inset Formula $\left\{ 1,2,\ldots,N_{d}\right\} $
+\end_inset
+
+ and 
+\begin_inset Formula $j_{d}\in\left\{ 1,2,\ldots,N_{d}\right\} $
 \end_inset
 
 .
@@ -865,10 +928,7 @@ c_{\left(j_{1},\ldots,j_{D}\right)}=a_{\left(\min\left\{ j_{1},N_{1}\right\} ,\l
 \end_layout
 
 \begin_layout Standard
-Element-wise multiplication with broadcasting is the standard 
-\lang british
-behaviour
-\lang english
+Element-wise multiplication with broadcasting is the standard behaviour
  for multiplication of multi-dimensional arrays in Numpy and TensorFlow.
  In Julia it is implemented by the .* operator.
 \end_layout
@@ -933,7 +993,7 @@ N_{D}=M_{D-1}.
 
 \end_inset
 
-The generalised matrix multiplication is defined as 
+The generalised matrix multiplication is denoted as 
 \begin_inset Formula 
 \[
 {\cal C}=\text{matmul}\left({\cal A},{\cal B}\right).
@@ -1258,7 +1318,7 @@ Input to the Chebyshev batch calculation are a matrix
  That is, 
 \begin_inset Formula 
 \[
-{\cal P}=\left[p\left(x^{1}\right),\ldots,p\left(x^{N}\right)\right].
+{\cal P}=\left[\pi\left(x^{1}\right),\ldots,\pi\left(x^{N}\right)\right].
 \]
 
 \end_inset
@@ -1343,7 +1403,7 @@ noprefix "false"
  to calculate a vector 
 \begin_inset Formula 
 \[
-{\cal R}=\left[f\left(x^{1}\right),\ldots,f\left(x^{N}\right)\right]^{\top}.
+{\cal R}=\left[{\cal I}_{\bar{N}}\left(x^{1}\right),\ldots,{\cal I}_{\bar{N}}\left(x^{N}\right)\right]^{\top}.
 \]
 
 \end_inset
@@ -1843,7 +1903,7 @@ noprefix "false"
 ),
 \begin_inset Formula 
 \[
-c_{\bar{j}}=\underbrace{\left(\prod_{d=1}^{D}\frac{2^{\mathbbm{1}_{0<j_{d}<N_{d}}}}{N_{d}}\right)}_{v_{\bar{j}}}\sum_{k_{1}=0}^{N_{1}}\text{´´}\cdots\sum_{k_{D}=0}^{N_{D}}\text{´´}y\left(x\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\right)\prod_{d=1}^{D}T_{j_{d}}\left(q_{k_{d}}^{d}\right)
+c_{\bar{j}}=\underbrace{\left(\prod_{d=1}^{D}\frac{2^{\mathbbm{1}_{0<j_{d}<N_{d}}}}{N_{d}}\right)}_{v_{\bar{j}}}\sum_{k_{1}=0}^{N_{1}}\text{´´}\cdots\sum_{k_{D}=0}^{N_{D}}\text{´´}f\left(\pi^{-1}\left(q_{k_{1}}^{1},\ldots,q_{k_{D}}^{D}\right)\right)\prod_{d=1}^{D}T_{j_{d}}\left(q_{k_{d}}^{d}\right)
 \]
 
 \end_inset
@@ -1922,7 +1982,7 @@ For each row
  such that
 \begin_inset Formula 
 \begin{equation}
-\left[y_{\bar{k}}\right]_{\bar{k}\in J}=\left[y\left(x\left(q_{\bar{k}}\right)\right)\right]_{\bar{k}\in J}.\label{eq:function-values}
+\left[y_{\bar{k}}\right]_{\bar{k}\in J}=\left[f\left(\pi^{-1}\left(q_{\bar{k}}\right)\right)\right]_{\bar{k}\in J}.\label{eq:function-values}
 \end{equation}
 
 \end_inset
@@ -1955,7 +2015,7 @@ We note that calculations of the weight vectors
 \begin_inset Formula $\left[v_{\bar{j}}\right]_{\bar{j}\in J}$
 \end_inset
 
- can also be vectorisied and do not require manual iteration over the index
+ can also be vectorised and do not require manual iteration over the index
  
 \begin_inset Formula $\bar{k}$
 \end_inset
@@ -2544,8 +2604,35 @@ literal "false"
  Re-using efficient one-dimensional Chebyshev implementation and avoiding
  the Chebyshev coefficients is a clear advantage compared to the algorithms
  proposed in this paper.
- However, the advantage comes at the cost of higher computational effort
- for Chebyshev interpolation evaluation if the polynomial degree is high.
+ However, our numerical tests indicate that the advantage comes at the cost
+ of higher computational effort for Chebyshev interpolation evaluation.
+ The recursive interpolation approach requires 
+\begin_inset Formula $\prod_{d=1}^{D-1}\left(N_{d}+1\right)$
+\end_inset
+
+ one-dimensional interpolations.
+ Each one-dimensional interpolation is implemented via Barycentric interpolation
+ formula 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "Eq. 3.18"
+key "RZ21"
+literal "false"
+
+\end_inset
+
+.
+ The Barycentric interpolation formula is of order 
+\begin_inset Formula ${\cal O}\left(N_{d}+1\right)$
+\end_inset
+
+.
+ However, it involves divisions and more multiplications and additions compared
+ to the scalar products evaluated via 
+\emph on
+matmul
+\emph default
+ operation.
 \end_layout
 
 \begin_layout Paragraph*
@@ -2865,9 +2952,9 @@ The expectation of the squared volatility
 
 \end_inset
 
-We use this this property to define an 
+We use this this property to define a 
 \emph on
-average standard deviation
+proxy standard deviation
 \emph default
  of asset prices as
 \begin_inset Formula 
@@ -2877,7 +2964,7 @@ average standard deviation
 
 \end_inset
 
-The average standard deviation is used to normalise option strikes 
+The proxy standard deviation is used to normalise option strikes 
 \begin_inset Formula $K$
 \end_inset
 
@@ -3439,7 +3526,11 @@ Some representative volatility smiles of the target function and Chebyshev
 \begin_inset Formula $N_{d}=2$
 \end_inset
 
- for all 
+ and 
+\begin_inset Formula $N_{d}=3$
+\end_inset
+
+ and for all 
 \begin_inset Formula $d=1,\ldots,8$
 \end_inset
 
@@ -3460,11 +3551,18 @@ noprefix "false"
 \begin_inset Formula $N_{d}$
 \end_inset
 
-=2 corresponds to quadratic interpolation in moneyness direction.
+=2 corresponds to quadratic interpolation and 
+\begin_inset Formula $N_{d}$
+\end_inset
+
+=3 corresponds to cubic interpolation in moneyness direction.
  We find that quadratic interpolation allows to capture the general shape
  of the volatility surface.
  However, there are still considerable differences between Heston model
  target function and Chebyshev interpolation function.
+ As expected, for cubic interpolation we observe a closer fit between target
+ function and Chebyshev interpolation function.
+ This observation holds in particular for the wings of the volatility smiles.
 \end_layout
 
 \begin_layout Standard
@@ -3476,8 +3574,19 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename figs/plot_smiles_figure.png
-	width 70text%
+	filename figs/plot_smiles_N2.png
+	width 75text%
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Graphics
+	filename figs/plot_smiles_N3.png
+	width 75text%
 
 \end_inset
 
@@ -3499,7 +3608,11 @@ Example implied volatility smiles of Heston model and Chebyshev interpolation
 \begin_inset Formula $N_{d}=2$
 \end_inset
 
- for all dimensions.
+ (top) and 
+\begin_inset Formula $N_{d}=3$
+\end_inset
+
+ (bottom) for all dimensions.
  Lines represent target function and dots represent Chebyshev interpolation.
 \end_layout
 
@@ -3994,6 +4107,28 @@ Our numerical results show that TensorFlow's internal ability to parallelise
  interpolation.
  With the given setup TensorFlow outperforms Numpy and Julia for larger
  number of Chebyshev points.
+\end_layout
+
+\begin_layout Standard
+A further challenge for larger dimensions remains the memory requirements
+ for holding the Chebyshev coefficient tensor.
+ This challenge can be tackled by splitting the tensor along the first one
+ or two modes and distributing it on several computing nodes on a computational
+ grid.
+ The sequence of 
+\emph on
+matmul
+\emph default
+ operations for the remaining modes, which forms the backbone of our algorithm,
+ can then be performed on each computing node independently.
+ Communication between the computing nodes is only required when 
+\emph on
+matmul
+\emph default
+ operations are performed for the first modes used for splitting in the
+ first place.
+ This way distributed and cloud computing can help mitigating large memory
+ requirements.
 \end_layout
 
 \begin_layout Standard
