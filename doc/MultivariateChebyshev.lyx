@@ -100,7 +100,7 @@ Sebastian Schlenkrich
 \end_layout
 
 \begin_layout Date
-June 2022
+July 2022
 \end_layout
 
 \begin_layout Abstract
@@ -310,7 +310,7 @@ An equivalent representation is given via the recursion
 \begin_inset Formula 
 \[
 \begin{aligned}T_{0}\left(\alpha\right) & =1,\\
-T_{1}\left(\alpha\right) & =p_{d},\\
+T_{1}\left(\alpha\right) & =\alpha,\\
 T_{j}\left(\alpha\right) & =2\alpha T_{j-1}\left(\alpha\right)-T_{j-2}\left(\alpha\right).
 \end{aligned}
 \]
@@ -542,7 +542,7 @@ Within each iteration we have
 \begin_inset Formula $D\,\prod_{d=1}^{D}\left(N_{d}+1\right)$
 \end_inset
 
- multiplications potentially followed by an additions.
+ multiplications potentially followed by an addition.
  This illustrates the exponential growth of computational effort in terms
  of number of dimensions 
 \begin_inset Formula $D$
@@ -1987,7 +1987,7 @@ For each row
 
 \end_inset
 
-The weighs of the 
+The weights of the 
 \begin_inset Formula $\sum\text{´´}$
 \end_inset
 
@@ -2015,7 +2015,7 @@ We note that calculations of the weight vectors
 \begin_inset Formula $\left[v_{\bar{j}}\right]_{\bar{j}\in J}$
 \end_inset
 
- can also be vectorised and do not require manual iteration over the index
+ can also be vectorised and do not require manual iteration over the indices
  
 \begin_inset Formula $\bar{k}$
 \end_inset
@@ -2589,7 +2589,7 @@ The calculation of the Chebyshev coefficient tensor
 \begin_inset Formula ${\cal C}$
 \end_inset
 
- can also be avoided altogether.
+ can also be avoided entirely.
  This is achieved by implementing multivariate Chebyshev interpolation as
  recursive one-dimensional interpolations.
  The approach is proposed in 
@@ -2727,18 +2727,18 @@ ce perspective.
 \end_layout
 
 \begin_layout Section
-Case Study - Implied Volatility Surface of Heston Model
+Case Study - Implied Volatility Surface of the Heston Model
 \end_layout
 
 \begin_layout Standard
 In this section we describe numerical results when applying our Chebyshev
  implementations to interpolate implied volatilities in a Heston model.
- The example is chosen because on the one hand side Heston model is a relevant
- model in practice to price FX and equity options.
+ The example is chosen because on the one hand side the Heston model is
+ a relevant model in practice to price FX and equity options.
  On the other hand side pricing Vanilla options and calculating implied
- volatility in Heston model is computationally feasible such that the resulting
- target function can easily be used to calibrate relatively large Chebyshev
- tensors.
+ volatility in the Heston model is computationally feasible such that the
+ resulting target function can easily be used to calibrate relatively large
+ Chebyshev tensors.
 \end_layout
 
 \begin_layout Standard
@@ -2779,7 +2779,7 @@ Heston model specification.
 \end_layout
 
 \begin_layout Standard
-Heston model is a model for the price process of a financial asset 
+The Heston model is a model for the price process of a financial asset 
 \begin_inset Formula $S_{t}$
 \end_inset
 
@@ -2823,7 +2823,8 @@ with initial conditions
 \end_layout
 
 \begin_layout Standard
-For option pricing methods in Heston model we refer to the standard literature.
+For option pricing methods in the Heston model we refer to the standard
+ literature.
  Our implementation for testing utilises QuantLib 
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -2859,7 +2860,7 @@ literal "false"
 \end_inset
 
  are obtained by inverting Black's formula given a forward Vanilla option
- price derived in Heston model.
+ price derived in the Heston model.
 \end_layout
 
 \begin_layout Standard
@@ -2869,8 +2870,8 @@ For implied volatility modelling we are interested in forward prices.
 \end_inset
 
 .
- Implied volatility in Heston model is driven by the parameters of the squared
- volatility process 
+ Implied volatility in the Heston model is driven by the parameters of the
+ squared volatility process 
 \begin_inset Formula $v_{t}$
 \end_inset
 
@@ -2928,7 +2929,7 @@ For implied volatility modelling we are interested in forward prices.
 
 \begin_layout Standard
 For our parametrisation of implied volatilities we will use two properties
- of Heston model.
+ of the Heston model.
 \end_layout
 
 \begin_layout Paragraph*
@@ -3636,7 +3637,7 @@ We analyse the computational performance of the methods.
 \begin_inset Formula $y$
 \end_inset
 
- for modelling Heston implied volatilities.
+ for modelling Heston-implied volatilities.
  We use an equal number of degrees 
 \begin_inset Formula $N=N_{d}$
 \end_inset
@@ -4030,7 +4031,6 @@ noprefix "false"
 
 \end_inset
 
-.
  that the computational effort for Chebyshev coefficient calculation is
  proportional to the square of the number of Chebyshev points.
  The number of Chebyshev points itself for this example is proportional
@@ -4106,7 +4106,7 @@ Our numerical results show that TensorFlow's internal ability to parallelise
  calculations can easily be utilised efficiently for multivariate Chebyshev
  interpolation.
  With the given setup TensorFlow outperforms Numpy and Julia for larger
- number of Chebyshev points.
+ numbers of Chebyshev points.
 \end_layout
 
 \begin_layout Standard
