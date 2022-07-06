@@ -115,7 +115,7 @@ In this paper we analyse multivariate Chebyshev interpolation for function
  approximation.
  As a result we find that TensorFlow's internal parallelisation methodology
  proves advantageous for medium and and large size interpolation problems.
- This result motivates using Chebyshev interpolation as component in larger
+ This result motivates using Chebyshev interpolation as a component in larger
  TensorFlow-based approximation models.
 \end_layout
 
@@ -4096,7 +4096,7 @@ Multivariate Chebyshev interpolation is a powerful tool for approximating
 \begin_layout Standard
 With this work we demonstrated how multivariate Chebyshev interpolation
  can be implemented efficiently using high-level linear algebra operations.
- This does not circumvent the course of dimensionality of the method.
+ This does not circumvent the curse of dimensionality of the method.
  But it allows us to utilise efficient BLAS implementations and parallelisation
  of general purpose linear algebra packages.
 \end_layout
