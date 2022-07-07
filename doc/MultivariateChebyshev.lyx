@@ -97,6 +97,36 @@ Implementing Multivariate Chebyshev Interpolation
 
 \begin_layout Author
 Sebastian Schlenkrich
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+E-mail: 
+\begin_inset CommandInset href
+LatexCommand href
+name "sebastian.schlenkrich@d-fine.de"
+target "sebastian.schlenkrich@d-fine.de"
+type "mailto:"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset VSpace defskip
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\emph on
+d-fine GmbH, Frankfurt, Germany
 \end_layout
 
 \begin_layout Date
